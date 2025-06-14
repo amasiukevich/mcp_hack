@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, Optional
 
-from data_schema import Shipment
+from mcp_stuff.data_schema import Shipment
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from sqlalchemy import create_engine
