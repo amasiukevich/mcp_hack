@@ -110,7 +110,7 @@ class MCP_ChatBot:
     async def connect_to_server_and_run(self, query: str):
         # Create server parameters for stdio connection
         server_params = StdioServerParameters(
-            command="python3",  # Executable
+            command="python",  # Executable
             args=["-m", "mcp_stuff.mcp_code"],  # Optional command line arguments
             env=None,  # Optional environment variables
         )
