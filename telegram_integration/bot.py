@@ -61,7 +61,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         shared_contacts.add(contact.user_id)
         keyboard = [[KeyboardButton("My orders")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        await update.message.reply_text(f"Thanks! Your phone number is {contact.phone_number}", reply_markup=reply_markup)
+        await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
 
 async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send hardcoded order data to the user."""
