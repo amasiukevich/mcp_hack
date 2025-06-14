@@ -155,8 +155,33 @@ class GmailClient:
         except HttpError:
             return None
 
-    # TODO: There is a limit of 10 messages right now, need to add pagination later
-    def get_unread_messages(self, max_results: int = 10) -> List[Email]:
+    def mark_as_read(self, message_ids: List[str]) -> bool:
+        """Mark emails as read by removing the UNREAD label.
+
+        Args:
+            message_ids: List of message IDs to mark as read
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not message_ids:
+            return True
+
+        try:
+            body = {"removeLabelIds": ["UNREAD"], "ids": message_ids}
+
+            self.service.users().messages().batchModify(
+                userId="me", body=body
+            ).execute()
+
+            return True
+        except HttpError:
+            return False
+
+    # TODO: mark_as_read takes abount 1 second to update the gmail state, might be an issue
+    def get_unread_messages(
+        self, max_results: int = 10, mark_as_read: bool = False
+    ) -> List[Email]:
         try:
             results = (
                 self.service.users()
@@ -173,6 +198,9 @@ class GmailClient:
             messages = results.get("messages", [])
             emails = []
 
+            if not messages:
+                return []
+
             for message in messages:
                 msg = (
                     self.service.users()
@@ -184,8 +212,14 @@ class GmailClient:
                 emails.append(self._parse_email_message(msg))
 
             emails = self._remove_older_replies_in_the_same_thread(emails)
+            sorted_emails = sorted(emails, key=lambda x: x.timestamp, reverse=True)
 
-            return sorted(emails, key=lambda x: x.timestamp, reverse=True)
+            # Mark emails as read if requested
+            if mark_as_read and emails:
+                message_ids = [email.message_id for email in emails]
+                self.mark_as_read(message_ids)
+
+            return sorted_emails
 
         except HttpError:
             return []
@@ -341,3 +375,6 @@ if __name__ == "__main__":
 
     for email in unread_emails:
         pprint(email.to_dict())
+
+    unread_emails = gmail.get_unread_messages(mark_as_read=True)
+    print(f"We have {len(unread_emails)} unread emails")
