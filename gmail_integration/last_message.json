@@ -1,0 +1,60 @@
+{
+    "id": "1976eae0de51f583",
+    "threadId": "1976eae0de51f583",
+    "labelIds": [
+        "UNREAD",
+        "SENT",
+        "INBOX"
+    ],
+    "snippet": "Hello! This is a test email sent using the GmailClient class.",
+    "payload": {
+        "partId": "",
+        "mimeType": "text/plain",
+        "filename": "",
+        "headers": [
+            {
+                "name": "Received",
+                "value": "from 414755828241 named unknown by gmailapi.google.com with HTTPREST; Sat, 14 Jun 2025 06:43:09 -0700"
+            },
+            {
+                "name": "To",
+                "value": "vtitko27@gmail.com"
+            },
+            {
+                "name": "Subject",
+                "value": "Test Email from GmailClient Class"
+            },
+            {
+                "name": "Content-Type",
+                "value": "text/plain; charset=\"utf-8\""
+            },
+            {
+                "name": "Content-Transfer-Encoding",
+                "value": "7bit"
+            },
+            {
+                "name": "MIME-Version",
+                "value": "1.0"
+            },
+            {
+                "name": "Date",
+                "value": "Sat, 14 Jun 2025 06:43:09 -0700"
+            },
+            {
+                "name": "Message-Id",
+                "value": "<CAJ7qpthTYxgLsHNgOS212H446kLzgxP0gZiXH9jXgczO_6h_ww@mail.gmail.com>"
+            },
+            {
+                "name": "From",
+                "value": "vtitko27@gmail.com"
+            }
+        ],
+        "body": {
+            "size": 62,
+            "data": "SGVsbG8hIFRoaXMgaXMgYSB0ZXN0IGVtYWlsIHNlbnQgdXNpbmcgdGhlIEdtYWlsQ2xpZW50IGNsYXNzLgo="
+        }
+    },
+    "sizeEstimate": 495,
+    "historyId": "1608056",
+    "internalDate": "1749908589000"
+}

@@ -1,4 +1,5 @@
 import base64
+import json
 import os.path
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,13 +15,28 @@ from googleapiclient.errors import HttpError
 
 @dataclass
 class Email:
-    message_id: str
+    message_id: str  # Google's internal ID
+    thread_id: str
     sender: str
     recipient: str
     subject: str
     date: str
     body: str
     timestamp: datetime  # For sorting
+    email_message_id: str  # Standard email Message-ID header
+
+    def to_dict(self) -> dict:
+        return {
+            "message_id": self.message_id,
+            "thread_id": self.thread_id,
+            "sender": self.sender,
+            "recipient": self.recipient,
+            "subject": self.subject,
+            "date": self.date,
+            "body": self.body,
+            "timestamp": self.timestamp.isoformat(),
+            "email_message_id": self.email_message_id,
+        }
 
 
 class GmailClient:
@@ -80,13 +96,15 @@ class GmailClient:
         # Extract headers
         headers = message["payload"]["headers"]
         email_data = {
-            "message_id": message["id"],
+            "message_id": message["id"],  # Google's internal ID
+            "thread_id": message["threadId"],
             "sender": "",
             "recipient": "",
             "subject": "",
             "date": "",
             "body": "",
             "timestamp": datetime.now(),  # Default value
+            "email_message_id": "",  # Standard email Message-ID header
         }
 
         # Extract header values
@@ -109,6 +127,8 @@ class GmailClient:
                 except ValueError:
                     # If parsing fails, keep the default timestamp
                     pass
+            elif name.lower() == "message-id":
+                email_data["email_message_id"] = header["value"]
 
         # Extract body
         if "parts" in message["payload"]:
@@ -239,40 +259,137 @@ class GmailClient:
             print(f"An error occurred while sending email: {error}")
             return False
 
+    def reply_to_email(self, email: Email, body: str) -> bool:
+        """Reply to an email with proper quoting of previous messages.
+
+        Args:
+            email: The Email object to reply to
+            body: Body text of the reply
+
+        Returns:
+            True if reply was sent successfully, False otherwise.
+        """
+        try:
+            # Extract the original sender to use as recipient
+            to_email = email.sender
+
+            # Create reply subject (Re: original subject)
+            subject = email.subject
+            if not subject.lower().startswith("re:"):
+                subject = f"Re: {subject}"
+
+            # Format the quoted text like Gmail does
+            quoted_text_html = self._format_quoted_text_html(email)
+
+            # Create the reply message
+            message = EmailMessage()
+            message["To"] = to_email
+            message["Subject"] = subject
+
+            # Use the proper email Message-ID for threading
+            if email.email_message_id:
+                message["References"] = email.email_message_id
+                message["In-Reply-To"] = email.email_message_id
+
+            body = body.replace("\n>", "<br>")
+            body = body.replace("\n", "<br>")
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif;">
+                <div>{body}</div>
+                {quoted_text_html}
+            </div>
+            """
+            html_content = html_content.replace("\n", "")
+
+            message.set_content(html_content, subtype="html")
+            encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+            create_message = {"raw": encoded_message, "threadId": email.thread_id}
+
+            self.service.users().messages().send(
+                userId="me", body=create_message
+            ).execute()
+
+            print(f"Reply sent to {to_email} with thread ID: {email.thread_id}")
+            return True
+
+        except HttpError as error:
+            print(f"An error occurred while sending reply: {error}")
+            return False
+
+    def _format_quoted_text_html(self, email: Email) -> str:
+        """Format the original email as quoted text in HTML with vertical line.
+
+        Args:
+            email: The Email object to quote
+
+        Returns:
+            Formatted quoted text in HTML
+        """
+        # Format the date in a readable format
+        try:
+            date_obj = email.timestamp
+            formatted_date = date_obj.strftime("%a, %b %d, %Y at %I:%M %p")
+        except (ValueError, AttributeError):
+            formatted_date = email.date
+
+        # Format the quoted header like Gmail does
+        quoted_header = f"On {formatted_date}, {email.sender} wrote:"
+
+        # Format the body with a vertical line
+        quoted_body = email.body.replace("\n", "<br>")
+
+        # The CSS creates a vertical line similar to Gmail's interface
+        return f"""
+        <div style="margin-top: 0px; color: #666;">
+            <div>{quoted_header}</div>
+            <blockquote style="margin: 0 0 0 0.8ex; padding-left: 1ex; border-left: 1px solid #ccc;">{quoted_body}</blockquote>
+        </div>
+        """
+
 
 # Example usage
 if __name__ == "__main__":
     # Create Gmail client
     gmail = GmailClient()
 
+    # success = gmail.send_email(
+    #     to_email="vtitko27@gmail.com",
+    #     subject="Test Email from GmailClient Class",
+    #     body="Hello! This is a test email sent using the GmailClient class.",
+    # )
+    # if success:
+    #     print("Email sent successfully!")
+    # else:
+    #     print("Failed to send email.")
+
     # Get the last email
     print("Getting last email...")
     last_email = gmail.get_last_email()
+
+    if last_email:
+        with open("email_last.json", "w") as f:
+            json.dump([last_email.to_dict()], f, indent=4)
+
     if last_email:
         print(f"Last email from: {last_email.sender}")
         print(f"Subject: {last_email.subject}")
         print(f"Date: {last_email.date}")
+        print(f"Thread ID: {last_email.thread_id}")
         print(f"Body preview: {last_email.body[:100]}...")
+
+        # Reply to the last email with proper quoting
+        print("\nReplying to the last email...")
+        reply_body = (
+            "This is an automated reply to your email."
+            "\nThank you for your message."
+            f"\nCurrent time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+
+        if gmail.reply_to_email(last_email, reply_body):
+            print("Reply sent successfully!")
+        else:
+            print("Failed to send reply.")
+
     else:
         print("No emails found.")
-
-    # Get emails from a specific sender
-    sender = "vtitko27@gmail.com"  # Replace with a sender email to test
-    print(f"\nGetting emails from {sender}...")
-    emails = gmail.get_emails_by_sender(sender, max_results=5)
-    print(f"Found {len(emails)} emails from {sender}")
-    for i, email in enumerate(emails):
-        print(f"{i+1}. Subject: {email.subject} (Date: {email.date})")
-
-    # Send an email
-    recipient = "vtitko27@gmail.com"  # Replace with your test recipient
-    print(f"\nSending test email to {recipient}...")
-    success = gmail.send_email(
-        to_email=recipient,
-        subject="Test Email from GmailClient Class",
-        body="Hello! This is a test email sent using the GmailClient class.",
-    )
-    if success:
-        print("Email sent successfully!")
-    else:
-        print("Failed to send email.")
