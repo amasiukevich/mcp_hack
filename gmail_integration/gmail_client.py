@@ -1,5 +1,4 @@
 import base64
-import json
 import os.path
 import warnings
 from dataclasses import dataclass
@@ -65,9 +64,6 @@ class GmailClient:
                     self.credentials_file, self.SCOPES
                 )
                 creds = flow.run_local_server(port=0)
-
-            with open(self.token_file, "w") as token:
-                token.write(creds.to_json())
 
         return build("gmail", "v1", credentials=creds)
 
@@ -188,9 +184,6 @@ class GmailClient:
                 emails.append(self._parse_email_message(msg))
 
             emails = self._remove_older_replies_in_the_same_thread(emails)
-
-            with open("emails.json", "w") as f:
-                json.dump([email.to_dict() for email in emails], f, indent=4)
 
             return sorted(emails, key=lambda x: x.timestamp, reverse=True)
 
