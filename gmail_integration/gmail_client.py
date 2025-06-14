@@ -1,11 +1,13 @@
 import base64
 import json
 import os.path
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from email.message import EmailMessage
 from typing import Any, List, Optional
 
+import pytz
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -93,12 +95,25 @@ class GmailClient:
                 email_data["subject"] = header["value"]
             elif name == "date":
                 email_data["date"] = header["value"]
-                try:
-                    email_data["timestamp"] = datetime.strptime(
-                        header["value"], "%a, %d %b %Y %H:%M:%S %z"
-                    )
-                except ValueError:
-                    pass
+                date_formats = [
+                    "%a, %d %b %Y %H:%M:%S %z",
+                    "%a, %d %b %Y %H:%M:%S %Z",
+                    "%a, %d %b %Y %H:%M:%S GMT",
+                    "%a, %d %b %Y %H:%M:%S +0000 (UTC)",
+                ]
+
+                parsed = False
+                for date_format in date_formats:
+                    try:
+                        timestamp = datetime.strptime(header["value"], date_format)
+                        email_data["timestamp"] = timestamp.replace(tzinfo=pytz.utc)
+                        parsed = True
+                        break
+                    except ValueError:
+                        continue
+
+                if not parsed:
+                    warnings.warn(f"Failed to parse date: {header['value']}")
             elif name.lower() == "message-id":
                 email_data["email_message_id"] = header["value"]
 
@@ -141,8 +156,65 @@ class GmailClient:
 
             return self._parse_email_message(msg)
 
-        except HttpError as error:
+        except HttpError:
             return None
+
+    # TODO: There is a limit of 10 messages right now, need to add pagination later
+    def get_unread_messages(self, max_results: int = 10) -> List[Email]:
+        try:
+            results = (
+                self.service.users()
+                .messages()
+                .list(
+                    userId="me",
+                    labelIds=["UNREAD", "INBOX"],
+                    maxResults=max_results,
+                    q="category:primary",
+                )
+                .execute()
+            )
+
+            messages = results.get("messages", [])
+            emails = []
+
+            for message in messages:
+                msg = (
+                    self.service.users()
+                    .messages()
+                    .get(userId="me", id=message["id"], format="full")
+                    .execute()
+                )
+
+                emails.append(self._parse_email_message(msg))
+
+            emails = self._remove_older_replies_in_the_same_thread(emails)
+
+            with open("emails.json", "w") as f:
+                json.dump([email.to_dict() for email in emails], f, indent=4)
+
+            return sorted(emails, key=lambda x: x.timestamp, reverse=True)
+
+        except HttpError:
+            return []
+
+    def _remove_older_replies_in_the_same_thread(
+        self, emails: list[Email]
+    ) -> list[Email]:
+        if not emails:
+            return []
+
+        thread_groups: dict[str, list[Email]] = {}
+        for email in emails:
+            if email.thread_id not in thread_groups:
+                thread_groups[email.thread_id] = []
+            thread_groups[email.thread_id].append(email)
+
+        latest_emails = []
+        for _, thread_emails in thread_groups.items():
+            latest_email = max(thread_emails, key=lambda x: x.timestamp)
+            latest_emails.append(latest_email)
+
+        return latest_emails
 
     def get_emails_by_sender(
         self, sender_email: str, max_results: int = 10
@@ -171,7 +243,7 @@ class GmailClient:
 
             return sorted(emails, key=lambda x: x.timestamp, reverse=True)
 
-        except HttpError as error:
+        except HttpError:
             return []
 
     def send_email(self, to_email: str, subject: str, body: str) -> bool:
@@ -191,7 +263,7 @@ class GmailClient:
 
             return True
 
-        except HttpError as error:
+        except HttpError:
             return False
 
     def reply_to_email(self, email: Email, body: str) -> bool:
@@ -233,7 +305,7 @@ class GmailClient:
 
             return True
 
-        except HttpError as error:
+        except HttpError:
             return False
 
     def _format_quoted_text_html(self, email: Email) -> str:
@@ -258,13 +330,21 @@ class GmailClient:
 if __name__ == "__main__":
     gmail = GmailClient()
 
-    last_email = gmail.get_last_email()
+    # last_email = gmail.get_last_email()
 
-    if last_email:
-        reply_body = (
-            "This is an automated reply to your email."
-            "\nThank you for your message."
-            f"\nCurrent time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
+    # if last_email:
+    #     reply_body = (
+    #         "This is an automated reply to your email."
+    #         "\nThank you for your message."
+    #         f"\nCurrent time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    #     )
 
-        gmail.reply_to_email(last_email, reply_body)
+    #     gmail.reply_to_email(last_email, reply_body)
+
+    unread_emails = gmail.get_unread_messages()
+    print(f"We have {len(unread_emails)} unread emails")
+
+    from pprint import pprint
+
+    for email in unread_emails:
+        pprint(email.to_dict())
