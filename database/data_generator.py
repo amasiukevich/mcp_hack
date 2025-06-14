@@ -15,7 +15,7 @@ class DataGenerator:
         Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
-    
+        
     def generate_shippers(self, count=10):
         """
         Generate fake shipper data.
