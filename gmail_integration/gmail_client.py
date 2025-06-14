@@ -1,10 +1,12 @@
 import base64
 import os.path
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from email.message import EmailMessage
 from typing import Any, List, Optional
 
+import pytz
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -15,44 +17,45 @@ from googleapiclient.errors import HttpError
 @dataclass
 class Email:
     message_id: str
+    thread_id: str
     sender: str
     recipient: str
     subject: str
     date: str
     body: str
-    timestamp: datetime  # For sorting
+    timestamp: datetime
+    email_message_id: str
+
+    def to_dict(self) -> dict:
+        return {
+            "message_id": self.message_id,
+            "thread_id": self.thread_id,
+            "sender": self.sender,
+            "recipient": self.recipient,
+            "subject": self.subject,
+            "date": self.date,
+            "body": self.body,
+            "timestamp": self.timestamp.isoformat(),
+            "email_message_id": self.email_message_id,
+        }
 
 
 class GmailClient:
-    # Using full access scope
     SCOPES = ["https://mail.google.com/"]
 
     def __init__(
         self, credentials_file: str = "credentials.json", token_file: str = "token.json"
     ):
-        """Initialize the Gmail client.
-
-        Args:
-            credentials_file: Path to the credentials JSON file.
-            token_file: Path to store the token.
-        """
         self.credentials_file = credentials_file
         self.token_file = token_file
         self.service = self._authenticate()
 
     def _authenticate(self) -> Any:
-        """Authenticate with Gmail API.
-
-        Returns:
-            Authenticated Gmail API service.
-        """
         creds = None
 
-        # Load existing token if available
         if os.path.exists(self.token_file):
             creds = Credentials.from_authorized_user_file(self.token_file, self.SCOPES)
 
-        # If no valid credentials, authenticate
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
@@ -62,34 +65,22 @@ class GmailClient:
                 )
                 creds = flow.run_local_server(port=0)
 
-            # Save token for future use
-            with open(self.token_file, "w") as token:
-                token.write(creds.to_json())
-
         return build("gmail", "v1", credentials=creds)
 
     def _parse_email_message(self, message: dict) -> Email:
-        """Parse Gmail API message into Email dataclass.
-
-        Args:
-            message: Gmail API message object.
-
-        Returns:
-            Email dataclass with parsed data.
-        """
-        # Extract headers
         headers = message["payload"]["headers"]
         email_data = {
             "message_id": message["id"],
+            "thread_id": message["threadId"],
             "sender": "",
             "recipient": "",
             "subject": "",
             "date": "",
             "body": "",
-            "timestamp": datetime.now(),  # Default value
+            "timestamp": datetime.now(),
+            "email_message_id": "",
         }
 
-        # Extract header values
         for header in headers:
             name = header["name"].lower()
             if name == "from":
@@ -100,17 +91,28 @@ class GmailClient:
                 email_data["subject"] = header["value"]
             elif name == "date":
                 email_data["date"] = header["value"]
-                # Try to parse the date for sorting
-                try:
-                    # RFC 2822 format often used in email headers
-                    email_data["timestamp"] = datetime.strptime(
-                        header["value"], "%a, %d %b %Y %H:%M:%S %z"
-                    )
-                except ValueError:
-                    # If parsing fails, keep the default timestamp
-                    pass
+                date_formats = [
+                    "%a, %d %b %Y %H:%M:%S %z",
+                    "%a, %d %b %Y %H:%M:%S %Z",
+                    "%a, %d %b %Y %H:%M:%S GMT",
+                    "%a, %d %b %Y %H:%M:%S +0000 (UTC)",
+                ]
 
-        # Extract body
+                parsed = False
+                for date_format in date_formats:
+                    try:
+                        timestamp = datetime.strptime(header["value"], date_format)
+                        email_data["timestamp"] = timestamp.replace(tzinfo=pytz.utc)
+                        parsed = True
+                        break
+                    except ValueError:
+                        continue
+
+                if not parsed:
+                    warnings.warn(f"Failed to parse date: {header['value']}")
+            elif name.lower() == "message-id":
+                email_data["email_message_id"] = header["value"]
+
         if "parts" in message["payload"]:
             for part in message["payload"]["parts"]:
                 if part["mimeType"] == "text/plain" and "data" in part["body"]:
@@ -128,13 +130,7 @@ class GmailClient:
         return Email(**email_data)
 
     def get_last_email(self) -> Optional[Email]:
-        """Get the last received email.
-
-        Returns:
-            Email dataclass or None if no emails found.
-        """
         try:
-            # Get the list of messages, only the most recent one from INBOX
             results = (
                 self.service.users()
                 .messages()
@@ -147,7 +143,6 @@ class GmailClient:
             if not messages:
                 return None
 
-            # Get the full message details
             msg = (
                 self.service.users()
                 .messages()
@@ -157,24 +152,101 @@ class GmailClient:
 
             return self._parse_email_message(msg)
 
-        except HttpError as error:
-            print(f"An error occurred while retrieving email: {error}")
+        except HttpError:
             return None
+
+    def mark_as_read(self, message_ids: List[str]) -> bool:
+        """Mark emails as read by removing the UNREAD label.
+
+        Args:
+            message_ids: List of message IDs to mark as read
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not message_ids:
+            return True
+
+        try:
+            body = {"removeLabelIds": ["UNREAD"], "ids": message_ids}
+
+            self.service.users().messages().batchModify(
+                userId="me", body=body
+            ).execute()
+
+            return True
+        except HttpError:
+            return False
+
+    # TODO: mark_as_read takes abount 1 second to update the gmail state, might be an issue
+    def get_unread_messages(
+        self, max_results: int = 10, mark_as_read: bool = False
+    ) -> List[Email]:
+        try:
+            results = (
+                self.service.users()
+                .messages()
+                .list(
+                    userId="me",
+                    labelIds=["UNREAD", "INBOX"],
+                    maxResults=max_results,
+                    q="category:primary",
+                )
+                .execute()
+            )
+
+            messages = results.get("messages", [])
+            emails = []
+
+            if not messages:
+                return []
+
+            for message in messages:
+                msg = (
+                    self.service.users()
+                    .messages()
+                    .get(userId="me", id=message["id"], format="full")
+                    .execute()
+                )
+
+                emails.append(self._parse_email_message(msg))
+
+            emails = self._remove_older_replies_in_the_same_thread(emails)
+            sorted_emails = sorted(emails, key=lambda x: x.timestamp, reverse=True)
+
+            # Mark emails as read if requested
+            if mark_as_read and emails:
+                message_ids = [email.message_id for email in emails]
+                self.mark_as_read(message_ids)
+
+            return sorted_emails
+
+        except HttpError:
+            return []
+
+    def _remove_older_replies_in_the_same_thread(
+        self, emails: list[Email]
+    ) -> list[Email]:
+        if not emails:
+            return []
+
+        thread_groups: dict[str, list[Email]] = {}
+        for email in emails:
+            if email.thread_id not in thread_groups:
+                thread_groups[email.thread_id] = []
+            thread_groups[email.thread_id].append(email)
+
+        latest_emails = []
+        for _, thread_emails in thread_groups.items():
+            latest_email = max(thread_emails, key=lambda x: x.timestamp)
+            latest_emails.append(latest_email)
+
+        return latest_emails
 
     def get_emails_by_sender(
         self, sender_email: str, max_results: int = 10
     ) -> List[Email]:
-        """Get emails from a specific sender.
-
-        Args:
-            sender_email: Email address of the sender to filter by.
-            max_results: Maximum number of emails to retrieve.
-
-        Returns:
-            List of Email dataclasses sorted by timestamp (newest first).
-        """
         try:
-            # Search for emails from the specified sender
             query = f"from:{sender_email}"
             results = (
                 self.service.users()
@@ -187,7 +259,6 @@ class GmailClient:
             emails = []
 
             for message in messages:
-                # Get the full message details
                 msg = (
                     self.service.users()
                     .messages()
@@ -197,82 +268,113 @@ class GmailClient:
 
                 emails.append(self._parse_email_message(msg))
 
-            # Sort emails by timestamp (newest first)
             return sorted(emails, key=lambda x: x.timestamp, reverse=True)
 
-        except HttpError as error:
-            print(f"An error occurred while retrieving emails: {error}")
+        except HttpError:
             return []
 
     def send_email(self, to_email: str, subject: str, body: str) -> bool:
-        """Send an email.
-
-        Args:
-            to_email: Email address of the recipient.
-            subject: Subject of the email.
-            body: Body text of the email.
-
-        Returns:
-            True if email was sent successfully, False otherwise.
-        """
         try:
-            # Create an EmailMessage object
             message = EmailMessage()
             message["To"] = to_email
             message["Subject"] = subject
             message.set_content(body)
 
-            # Encode the EmailMessage object into a base64url string
             encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
 
-            # Create the message payload for the API
             create_message = {"raw": encoded_message}
 
-            # Send the message
             self.service.users().messages().send(
                 userId="me", body=create_message
             ).execute()
 
             return True
 
-        except HttpError as error:
-            print(f"An error occurred while sending email: {error}")
+        except HttpError:
             return False
 
+    def reply_to_email(self, email: Email, body: str) -> bool:
+        try:
+            to_email = email.sender
 
-# Example usage
+            subject = email.subject
+            if not subject.lower().startswith("re:"):
+                subject = f"Re: {subject}"
+
+            quoted_text_html = self._format_quoted_text_html(email)
+
+            message = EmailMessage()
+            message["To"] = to_email
+            message["Subject"] = subject
+
+            if email.email_message_id:
+                message["References"] = email.email_message_id
+                message["In-Reply-To"] = email.email_message_id
+
+            body = body.replace("\n>", "<br>")
+            body = body.replace("\n", "<br>")
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif;">
+                <div>{body}</div>
+                {quoted_text_html}
+            </div>
+            """
+            html_content = html_content.replace("\n", "")
+
+            message.set_content(html_content, subtype="html")
+            encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+            create_message = {"raw": encoded_message, "threadId": email.thread_id}
+
+            self.service.users().messages().send(
+                userId="me", body=create_message
+            ).execute()
+
+            return True
+
+        except HttpError:
+            return False
+
+    def _format_quoted_text_html(self, email: Email) -> str:
+        try:
+            date_obj = email.timestamp
+            formatted_date = date_obj.strftime("%a, %b %d, %Y at %I:%M %p")
+        except (ValueError, AttributeError):
+            formatted_date = email.date
+
+        quoted_header = f"On {formatted_date}, {email.sender} wrote:"
+
+        quoted_body = email.body.replace("\n", "<br>")
+
+        return f"""
+        <div style="margin-top: 0px; color: #666;">
+            <div>{quoted_header}</div>
+            <blockquote style="margin: 0 0 0 0.8ex; padding-left: 1ex; border-left: 1px solid #ccc;">{quoted_body}</blockquote>
+        </div>
+        """
+
+
 if __name__ == "__main__":
-    # Create Gmail client
     gmail = GmailClient()
 
-    # Get the last email
-    print("Getting last email...")
-    last_email = gmail.get_last_email()
-    if last_email:
-        print(f"Last email from: {last_email.sender}")
-        print(f"Subject: {last_email.subject}")
-        print(f"Date: {last_email.date}")
-        print(f"Body preview: {last_email.body[:100]}...")
-    else:
-        print("No emails found.")
+    # last_email = gmail.get_last_email()
 
-    # Get emails from a specific sender
-    sender = "vtitko27@gmail.com"  # Replace with a sender email to test
-    print(f"\nGetting emails from {sender}...")
-    emails = gmail.get_emails_by_sender(sender, max_results=5)
-    print(f"Found {len(emails)} emails from {sender}")
-    for i, email in enumerate(emails):
-        print(f"{i+1}. Subject: {email.subject} (Date: {email.date})")
+    # if last_email:
+    #     reply_body = (
+    #         "This is an automated reply to your email."
+    #         "\nThank you for your message."
+    #         f"\nCurrent time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    #     )
 
-    # Send an email
-    recipient = "vtitko27@gmail.com"  # Replace with your test recipient
-    print(f"\nSending test email to {recipient}...")
-    success = gmail.send_email(
-        to_email=recipient,
-        subject="Test Email from GmailClient Class",
-        body="Hello! This is a test email sent using the GmailClient class.",
-    )
-    if success:
-        print("Email sent successfully!")
-    else:
-        print("Failed to send email.")
+    #     gmail.reply_to_email(last_email, reply_body)
+
+    unread_emails = gmail.get_unread_messages()
+    print(f"We have {len(unread_emails)} unread emails")
+
+    from pprint import pprint
+
+    for email in unread_emails:
+        pprint(email.to_dict())
+
+    unread_emails = gmail.get_unread_messages(mark_as_read=True)
+    print(f"We have {len(unread_emails)} unread emails")
