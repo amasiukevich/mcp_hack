@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict, Optional
 
+
 from database.data_schema import Shipment
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
@@ -12,6 +13,13 @@ load_dotenv()
 
 mcp = FastMCP("TMS MCP")
 
+
+@mcp.tool()
+def get_shipper_by_email(email: str) -> Optional[Dict[Any, Any]]:
+    """
+    Retrieve a shipper record from the database by its email.
+    """
+    return get_shipper_by_email(email)
 
 @mcp.tool()
 def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
@@ -28,28 +36,7 @@ def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
     Raises:
         SQLAlchemyError: If there's any database-related error
     """
-    engine = create_engine(
-        os.getenv("DB_PATH"),
-        connect_args={"check_same_thread": False},  # Required for SQLite
-    )
-    SessionClass = sessionmaker(bind=engine)
-    db = SessionClass()
-
-    try:
-        shipment = (
-            db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
-        )
-
-        if not shipment:
-            return None
-
-        return shipment.to_dict()  # Assuming your model has a to_dict method
-
-    except SQLAlchemyError as e:
-        # Log the error here if you have a logging system
-        raise SQLAlchemyError(
-            f"Error retrieving shipment with ID {shipment_id}: {str(e)}"
-        )
+    return get_shipment_by_id(shipment_id)
 
 
 @mcp.tool()
@@ -67,26 +54,21 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     Raises:
         SQLAlchemyError: If there's any database-related error
     """
+    return get_shipment_by_bol_id(bol_id)
 
-    engine = create_engine(
-        os.getenv("DB_PATH"),
-        connect_args={"check_same_thread": False},  # Required for SQLite
-    )
-    SessionClass = sessionmaker(bind=engine)
-    db = SessionClass()
+@mcp.tool()
+def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
+    """
+    Retrieve all shipments from the database for a given shipper email.
 
-    try:
-        shipment = db.query(Shipment).filter(Shipment.bol_doc_id == bol_id).first()
+    Args:
+        email (str): Email of the shipper
 
-        if not shipment:
-            return None
+    Returns:
+        Optional[Dict[Any, Any]]: List of shipment dictionaries if found, None otherwise
 
-        return shipment.to_dict()  # Assuming your model has a to_dict method
-    except SQLAlchemyError as e:
-        # Log the error here if you have a logging system
-        raise SQLAlchemyError(
-            f"Error retrieving shipment with BOL ID {bol_id}: {str(e)}"
-        )
+    """
+    return get_all_shipments(shipper_email)
 
 
 if __name__ == "__main__":
