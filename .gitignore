@@ -195,5 +195,5 @@ cython_debug/
 credentials.json
 token.json
 
-/database/test_shipments.db
-*.db
+# /database/test_shipments.db
+# *.db
