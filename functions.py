@@ -43,7 +43,7 @@ def get_shipment_by_id(db: Session, shipment_id: int) -> Optional[Dict[Any, Any]
         raise SQLAlchemyError(f"Error retrieving shipment with ID {shipment_id}: {str(e)}")
 
 
-def get_shipment_by_bol_id(db: Session, bol_id: str) -> Optional[Dict[Any, Any]]:
+def get_shipment_by_bol_id(db: Session, bol_id: int) -> Optional[Dict[Any, Any]]:
     """
     Retrieve a shipment record from the database by its BOL ID.
     

@@ -62,8 +62,7 @@ if __name__ == "__main__":
     query = "What is up with my shipment? My bol number is 139712"
 
     conversation_history = []
-
-    # while True:
+    
     user_input = input("Enter your task:")
     conversation_history.append({"role": "user", "content": query})
 
@@ -72,7 +71,7 @@ if __name__ == "__main__":
         input=conversation_history,
         tools=function_handler.descriptions,
     )
-
+    
     results_of_execution = execute_function_calls(response)
     conversation_history.append(results_of_execution)
 

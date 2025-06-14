@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from data_schema import Shipment
+from mcp_stuff.data_schema import Shipment
 from dotenv import load_dotenv
 
 from typing import Optional, Dict, Any

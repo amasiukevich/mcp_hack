@@ -38,3 +38,8 @@ module = [
     "google_auth_oauthlib.*",
 ]
 ignore_missing_imports = true 
+
+[tool.uv.workspace]
+members = [
+    "mcp_stuff",
+]
