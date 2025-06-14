@@ -14,7 +14,7 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
-ignore = []
+ignore = ["E203", "E501"]
 
 [tool.ruff.isort]
 known-third-party = ["google", "googleapiclient", "google_auth_oauthlib"]

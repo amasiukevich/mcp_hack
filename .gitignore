@@ -193,6 +193,7 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 credentials.json
+token.json
 
 /database/test_shipments.db
 *.db

@@ -9,7 +9,7 @@ python -m black .
 
 # Run ruff (fast linter)
 echo "Running ruff..."
-python -m ruff check .
+python -m ruff check --fix .
 
 # Run mypy (static type checker)
 echo "Running mypy..."
