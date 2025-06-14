@@ -1,5 +1,6 @@
 ### Creating an MCP client
 
+import logging
 
 from dotenv import load_dotenv
 from anthropic import Anthropic
@@ -42,7 +43,7 @@ class MCP_ChatBot:
             assistant_content = []
             for content in response.content:
                 if content.type =='text':
-                    print(content.text)
+                    logging.info(content.text)
                     assistant_content.append(content)
                     if(len(response.content) == 1):
                         process_query = False
@@ -53,7 +54,7 @@ class MCP_ChatBot:
                     tool_args = content.input
                     tool_name = content.name
     
-                    print(f"Calling tool {tool_name} with args {tool_args}")
+                    logging.info(f"Calling tool {tool_name} with args {tool_args}")
                     
                     # Call a tool
                     #result = execute_tool(tool_name, tool_args)
@@ -73,7 +74,7 @@ class MCP_ChatBot:
                                       messages = messages) 
                     
                     if(len(response.content) == 1 and response.content[0].type == "text"):
-                        print(response.content[0].text)
+                        # logging.info(response.content[0].text)
                         process_query= False
         
         return response.content[0].text
@@ -85,18 +86,18 @@ class MCP_ChatBot:
         print("\nMCP Chatbot Started!")
         print("Type your queries or 'quit' to exit.")
         
-        # while True:
-        try:
-            query = input("\nQuery: ").strip()
-    
-            if query.lower() == 'quit':
-                break
-                
-            await self.process_query(query)
-            print("\n")
-                
-        except Exception as e:
-            print(f"\nError: {str(e)}")
+        while True:
+            try:
+                query = input("\nQuery: ").strip()
+        
+                if query.lower() == 'quit':
+                    break
+                    
+                await self.process_query(query)
+                print("\n")
+                    
+            except Exception as e:
+                print(f"\nError: {str(e)}")
     
     async def connect_to_server_and_run(self, query: str):
         # Create server parameters for stdio connection
@@ -116,7 +117,7 @@ class MCP_ChatBot:
                 response = await session.list_tools()
                 
                 tools = response.tools
-                print("\nConnected to server with tools:", [tool.name for tool in tools])
+                logging.info("\nConnected to server with tools:", [tool.name for tool in tools])
                 
                 self.available_tools = [{
                     "name": tool.name,
@@ -125,6 +126,4 @@ class MCP_ChatBot:
                 } for tool in response.tools]
     
                 return await self.process_query(query=query)
-
-
 
