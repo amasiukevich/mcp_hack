@@ -34,7 +34,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             shared_contacts.add(user_id)
             keyboard = [[KeyboardButton("My orders")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            await update.message.reply_text(f"Thanks! Your phone number is {user_msg}", reply_markup=reply_markup)
+            await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
         else:
             await update.message.reply_text(
                 "You need to share your phone number to continue. Please enter it manually (with country code, e.g. +1234567890):"
@@ -89,7 +89,7 @@ def main():
     app.add_handler(CommandHandler("my_orders", my_orders))
     app.add_handler(CommandHandler("phone", request_phone))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    app.add_handler(MessageHandler(filters.Regex(r'^(My orders|My orders)$'), my_orders))
+    app.add_handler(MessageHandler(filters.Regex(r'^(My order|my order|My orders|my orders)$'), my_orders))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Start polling and run until interrupted
