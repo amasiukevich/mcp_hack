@@ -1,10 +1,16 @@
 from fastapi import FastAPI, HTTPException
 
 from mcp_stuff.mcp_llm_engine import MCP_ChatBot
+from gmail_integration.gmail_client import Email, GmailClient
 
 app = FastAPI()
 
 chatbot = MCP_ChatBot()
+
+gmail_client = GmailClient(
+    credentials_file="gmail_integration/credentials.json",
+    token_file="gmail_integration/token.json",
+)
 
 
 @app.post("/query")
@@ -41,13 +47,19 @@ async def get_courier_shipments(contact_number: str):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@app.get("/courier_shipment_updates")
+@app.post("/courier_shipment_updates")
 async def courier_shipment_updates(phone_number: str, shipment_query: str):
     try:
+        # TODO: Add actual logic
         # result = await chatbot.connect_to_server_and_run(query=query)
-        result = "Updated shipment eta to 2025-06-27 18:24:32.121214"
-        # TODO: Send email notification to the shipper here
-        return {"response": result}
+        msg = "Updated shipment eta to 2025-06-27 18:24:32.121214"
+        
+        gmail_client.send_email(
+            to_email="example@gmail.com",  # Replace with actual email format for phone number
+            subject="Shipment Update",
+            body=msg,
+        )
+        return {"response": msg}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
