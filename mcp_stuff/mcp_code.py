@@ -6,6 +6,7 @@ from mcp_stuff.functions import (
     get_shipment_by_bol_id as get_shipment_by_bol_id_func,
     get_shipment_by_id as get_shipment_by_id_func,
     get_shipper_by_email as get_shipper_by_email_func,
+    update_shipment_eta as update_shipment_eta_func,
 )
 
 from database.data_schema import Shipment
@@ -77,6 +78,15 @@ def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
 
     """
     return get_all_shipments_func(shipper_email)
+
+@mcp.tool()
+def update_shipment_eta(shipment_id: int, seconds: int) -> Optional[Dict[Any, Any]]:
+    """
+    Update the eta of a shipment in the database.
+    Only supports adding seconds to the eta.
+    If original eta is not set, will be set to the current time + the number of seconds that are added.
+    """
+    return update_shipment_eta_func(shipment_id, seconds)
 
 
 if __name__ == "__main__":
