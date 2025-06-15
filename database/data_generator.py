@@ -31,7 +31,9 @@ class DataGenerator:
         Generate fake shipper data.
         """
         shippers = []
-        for _ in range(count):
+        shippers.append(Shipper(name="Ogon", email="shipper.3plcopilot@gmail.com"))
+
+        for _ in range(count - 1):
             shipper = Shipper(name=fake.company(), email=fake.company_email())
             shippers.append(shipper)
 
@@ -58,34 +60,31 @@ class DataGenerator:
     def generate_shipments(self, shippers, couriers, count=50):
         """Generate fake shipment data."""
         shipments = []
+        shipper_ogon_count = 0
         for _ in range(count):
             # Random ETA between now and 30 days from now
             eta = fake.date_time_between(start_date="now", end_date="+30d")
 
             # Delivery date might be None (not delivered yet) or after ETA
-            delivery_date = None
-            if random.choice([True, False]):  # 50% chance of being delivered
-                delivery_date = fake.date_time_between(start_date=eta, end_date="+45d")
+            delivery_date = fake.date_time_between(start_date=eta, end_date="+45d")
 
-            # Choose random shipper and courier (courier might be None)
-            shipper = random.choice(shippers)
-            courier = (
-                random.choice(couriers) if random.choice([True, False, True]) else None
-            )  # 66% chance of having courier
+            # Choose random shipper and courier
+            if shipper_ogon_count < 4:
+                shipper = shippers[0]
+                shipper_ogon_count += 1
+            else:
+                shipper = random.choice(shippers)
+            courier = random.choice(couriers)
 
             shipment = Shipment(
                 bol_doc_id=fake.random_int(min=100000, max=999999),
                 pod_doc_id=fake.random_int(min=100000, max=999999),
                 shipper_id=shipper.shipper_id,
-                courier_id=courier.courier_id if courier else None,
+                courier_id=courier.courier_id,
                 eta=eta,
                 delivery_date=delivery_date,
                 shipment_status=random.choice(list(ShipmentStatus)),
-                shipment_comments=(
-                    fake.text(max_nb_chars=200)
-                    if random.choice([True, False])
-                    else None
-                ),
+                shipment_comments=fake.text(max_nb_chars=200),
                 dest_address=fake.address().replace("\n", ", "),
                 source_address=fake.address().replace("\n", ", "),
             )

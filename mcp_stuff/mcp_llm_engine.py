@@ -1,15 +1,12 @@
 ### Creating an MCP client
 
+import json
 import logging
 import os
 from typing import List
 
-import json
-
-
 import nest_asyncio
 from anthropic import Anthropic
-
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -25,9 +22,10 @@ logger.setLevel(logging.INFO)
 # Add a console handler to display logs
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
+
 
 class MCP_ChatBot:
 
@@ -47,7 +45,7 @@ class MCP_ChatBot:
             tools=self.available_tools,
             messages=messages,
         )
-        
+
         process_query = True
 
         while process_query:
@@ -155,17 +153,25 @@ class MCP_ChatBot:
 
 def get_tool_result(messages: list[dict]) -> str:
 
-    tool_result_candidates = [result for message in messages for result in message['content'] if isinstance(message['content'], list) and isinstance(result, dict)]
-    
-    tool_results = [result for result in tool_result_candidates if result['type'] == "tool_result"]
-    
+    tool_result_candidates = [
+        result
+        for message in messages
+        for result in message["content"]
+        if isinstance(message["content"], list) and isinstance(result, dict)
+    ]
+
+    tool_results = [
+        result for result in tool_result_candidates if result["type"] == "tool_result"
+    ]
+
     if not tool_results:
         return None
-    
-    tool_result = tool_results[0]['content'][0].text
+
+    tool_result = tool_results[0]["content"][0].text
     result = json.loads(tool_result)
-    
+
     return result
+
 
 def get_shipper_email(messages: List[dict]) -> str:
     """
@@ -176,49 +182,51 @@ def get_shipper_email(messages: List[dict]) -> str:
 
     if not tool_result:
         return None
-    
-    return tool_result['shipper']['email']
+
+    return tool_result["shipper"]["email"]
+
 
 def get_courier_number(messages: List[dict]) -> str:
     """
     Get the courier number from the messages.
     """
-    
+
     tool_result = get_tool_result(messages)
 
     if not tool_result:
         return None
-    
-    return tool_result['courier']['contact_number']
+
+    return tool_result["courier"]["contact_number"]
 
 
 def get_shipment_order(messages: List[dict]) -> str:
     """
     Get the shipment order from the messages.
     """
-    
+
     tool_result = get_tool_result(messages)
-    
+
     if not tool_result:
         return None
-    
-    return tool_result['shipment_id']
+
+    return tool_result["shipment_id"]
+
 
 def get_shipment_info(messages: List[dict]) -> str:
     """
     Get the shipment info from the messages.
     """
-    
+
     tool_result = get_tool_result(messages)
-    
+
     if not tool_result:
         return None
-    
+
     return {
-        "shipment_id": tool_result['shipment_id'],
-        "shipment_status": tool_result['shipment_status'],
-        "eta": tool_result['eta'],
-        "delivery_date": tool_result['delivery_date'],
-        "source_address": tool_result['source_address'],
-        "dest_address": tool_result['dest_address'],
+        "shipment_id": tool_result["shipment_id"],
+        "shipment_status": tool_result["shipment_status"],
+        "eta": tool_result["eta"],
+        "delivery_date": tool_result["delivery_date"],
+        "source_address": tool_result["source_address"],
+        "dest_address": tool_result["dest_address"],
     }

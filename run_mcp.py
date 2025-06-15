@@ -1,19 +1,17 @@
 from fastapi import FastAPI, HTTPException
 
-from mcp_stuff.mcp_llm_engine import (
-    MCP_ChatBot, 
-    get_shipper_email, 
-    get_courier_number, 
-    get_shipment_order,
-    get_shipment_info
-)
+from gmail_integration.gmail_client import GmailClient
 from mcp_stuff.functions import get_shipments_by_courier_contact
-from gmail_integration.gmail_client import Email, GmailClient
-
+from mcp_stuff.mcp_llm_engine import (
+    MCP_ChatBot,
+    get_shipment_info,
+    get_shipment_order,
+    get_shipper_email,
+)
 from reply_handler import (
     TEMPLATE_EMAIL_UPDATE_ETA,
+    TEMPLATE_SUPPLIER_SHIPMENT_INFO,
     TEMPLATE_TG_UPDATE_ETA,
-    TEMPLATE_SUPPLIER_SHIPMENT_INFO
 )
 
 app = FastAPI()
@@ -33,10 +31,12 @@ async def process_query(query: str):
             result = TEMPLATE_SUPPLIER_SHIPMENT_INFO.format(**get_shipment_info(result))
             return {"response": result}
         else:
-            return {"response": "No shipment info found. Please specify the shipment id or BOL id."}
+            return {
+                "response": "No shipment info found. Please specify the shipment id or BOL id."
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 @app.get("/get_courier_shipments")
 async def get_courier_shipments(contact_number: str):
@@ -48,19 +48,21 @@ async def get_courier_shipments(contact_number: str):
 
         for shipment in result:
             shpmt = shipment.to_dict()
-            filtered_shipments.append({
-                "shipment_id": shpmt["shipment_id"],
-                "shipment_status": shpmt["shipment_status"],
-                "eta": shpmt["eta"],
-                "delivery_date": shpmt["delivery_date"],
-                "dest_address": shpmt["dest_address"],
-                "source_address": shpmt["source_address"],
-            })
+            filtered_shipments.append(
+                {
+                    "shipment_id": shpmt["shipment_id"],
+                    "shipment_status": shpmt["shipment_status"],
+                    "eta": shpmt["eta"],
+                    "delivery_date": shpmt["delivery_date"],
+                    "dest_address": shpmt["dest_address"],
+                    "source_address": shpmt["source_address"],
+                }
+            )
         return {"response": filtered_shipments}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 @app.post("/courier_shipment_updates")
 async def courier_shipment_updates(phone_number: str, shipment_query: str):
@@ -88,4 +90,5 @@ async def courier_shipment_updates(phone_number: str, shipment_query: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,17 +1,16 @@
-import json
-import time
-import requests
 import logging
+import time
+
+import requests
 
 from gmail_integration.gmail_client import Email, GmailClient
-from llm_function_calling.llm_engine import LLMEngine
 
 
 def call_mcp_server(query: str) -> str:
     url = "http://0.0.0.0:8001/query"
     params = {"query": query}
     headers = {"accept": "application/json"}
-    
+
     try:
         response = requests.post(url, headers=headers, params=params, data="")
         response.raise_for_status()
@@ -20,7 +19,7 @@ def call_mcp_server(query: str) -> str:
     except requests.RequestException as e:
         logging.error(f"Error calling MCP server: {e}")
         return f"Error: {str(e)}"
-    
+
 
 def create_query(email: Email) -> str:
     query = f"Send from email: {email.sender}\n"
