@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import List
+from typing import List, Optional
 
 import nest_asyncio
 from anthropic import Anthropic
@@ -67,6 +67,7 @@ class MCP_ChatBot:
 
                     # Call a tool
                     # result = execute_tool(tool_name, tool_args)
+
                     result = await self.session.call_tool(
                         tool_name, arguments=tool_args
                     )
@@ -96,7 +97,7 @@ class MCP_ChatBot:
                     ):
                         # logger.info(response.content[0].text)
                         process_query = False
-
+                    
         return messages
 
     async def chat_loop(self):
@@ -121,7 +122,7 @@ class MCP_ChatBot:
     async def connect_to_server_and_run(self, query: str) -> list[dict]:
         # Create server parameters for stdio connection
         server_params = StdioServerParameters(
-            command="python",  # Executable
+            command="python3",  # Executable
             args=["-m", "mcp_stuff.mcp_code"],  # Optional command line arguments
             env=None,  # Optional environment variables
         )
@@ -138,7 +139,7 @@ class MCP_ChatBot:
                 tools = response.tools
                 tools_names = [tool.name for tool in tools]
                 logger.info(f"\nConnected to server with tools: {tools_names}")
-
+            
                 self.available_tools = [
                     {
                         "name": tool.name,
@@ -151,7 +152,7 @@ class MCP_ChatBot:
                 return await self.process_query(query=query)
 
 
-def get_tool_result(messages: list[dict]) -> str:
+def get_tool_result(messages: list[dict]) -> dict:
 
     tool_result_candidates = [
         result
@@ -160,20 +161,17 @@ def get_tool_result(messages: list[dict]) -> str:
         if isinstance(message["content"], list) and isinstance(result, dict)
     ]
 
-    tool_results = [
-        result for result in tool_result_candidates if result["type"] == "tool_result"
-    ]
+    tool_results = [tool_result for tool_result in tool_result_candidates[0]['content']]
 
-    if not tool_results:
+    tool_result = [json.loads(tool_result.text) for tool_result in tool_results]
+
+    if not tool_result:
         return None
 
-    tool_result = tool_results[0]["content"][0].text
-    result = json.loads(tool_result)
-
-    return result
+    return tool_result
 
 
-def get_shipper_email(messages: List[dict]) -> str:
+def get_shipper_email(messages: List[dict]) -> Optional[str]:
     """
     Get the shipper email from the messages.
     """
@@ -183,10 +181,10 @@ def get_shipper_email(messages: List[dict]) -> str:
     if not tool_result:
         return None
 
-    return tool_result["shipper"]["email"]
+    return tool_result[0].get("shipper", {}).get("email")
 
 
-def get_courier_number(messages: List[dict]) -> str:
+def get_courier_number(messages: List[dict]) -> Optional[str]:
     """
     Get the courier number from the messages.
     """
@@ -196,10 +194,10 @@ def get_courier_number(messages: List[dict]) -> str:
     if not tool_result:
         return None
 
-    return tool_result["courier"]["contact_number"]
+    return tool_result[0].get("courier", {}).get("contact_number")
 
 
-def get_shipment_order(messages: List[dict]) -> str:
+def get_shipment_order(messages: List[dict]) -> Optional[str]:
     """
     Get the shipment order from the messages.
     """
@@ -209,24 +207,25 @@ def get_shipment_order(messages: List[dict]) -> str:
     if not tool_result:
         return None
 
-    return tool_result["shipment_id"]
+    return tool_result[0].get("shipment_id")
 
 
-def get_shipment_info(messages: List[dict]) -> str:
+def get_shipment_info(messages: List[dict]) -> Optional[dict]:
     """
     Get the shipment info from the messages.
     """
 
-    tool_result = get_tool_result(messages)
+    tool_results = get_tool_result(messages)
 
-    if not tool_result:
+    if not tool_results:
         return None
 
-    return {
-        "shipment_id": tool_result["shipment_id"],
-        "shipment_status": tool_result["shipment_status"],
-        "eta": tool_result["eta"],
-        "delivery_date": tool_result["delivery_date"],
-        "source_address": tool_result["source_address"],
-        "dest_address": tool_result["dest_address"],
-    }
+    return [{
+        "shipment_id": tool_result.get("shipment_id"),
+        "shipment_status": tool_result.get("shipment_status"),
+        "eta": tool_result.get("eta"),
+        "delivery_date": tool_result.get("delivery_date"),
+        "source_address": tool_result.get("source_address"),
+        "dest_address": tool_result.get("dest_address"),
+    } for tool_result in tool_results]
+

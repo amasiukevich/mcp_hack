@@ -22,7 +22,7 @@ mcp = FastMCP("TMS MCP")
 
 
 @mcp.tool()
-def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
+def get_shipment_by_id(email: str, shipment_id: int) -> Optional[Dict[Any, Any]]:
     """
     Retrieve a shipment record from the database by its ID.
 
@@ -36,11 +36,11 @@ def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
     Raises:
         SQLAlchemyError: If there's any database-related error
     """
-    return get_shipment_by_id_func(shipment_id)
+    return get_shipment_by_id_func(email, shipment_id)
 
 
 @mcp.tool()
-def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
+def get_shipment_by_bol_id(email: str, bol_id: int) -> Optional[Dict[Any, Any]]:
     """
     Retrieve a shipment record from the database by its BOL ID.
 
@@ -54,7 +54,7 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     Raises:
         SQLAlchemyError: If there's any database-related error
     """
-    return get_shipment_by_bol_id_func(bol_id)
+    return get_shipment_by_bol_id_func(email, bol_id)
 
 
 @mcp.tool()
