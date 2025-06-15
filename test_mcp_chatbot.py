@@ -7,4 +7,6 @@ async def main(query: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(query="What is the eta of shipment 7?"))
+    
+    # asyncio.run(main(query="What is the eta of shipment 7?"))
+    asyncio.run(main(query="Hey, operating on the shipment id 7, I will be delayed by 3 hours. Please update the eta."))

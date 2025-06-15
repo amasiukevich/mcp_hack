@@ -15,7 +15,15 @@ nest_asyncio.apply()
 load_dotenv()
 
 MODEL_NAME = "claude-3-5-haiku-20241022"
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
+# Add a console handler to display logs
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 class MCP_ChatBot:
 
@@ -35,15 +43,13 @@ class MCP_ChatBot:
             tools=self.available_tools,
             messages=messages,
         )
-
-        breakpoint()
         process_query = True
 
         while process_query:
             assistant_content = []
             for content in response.content:
                 if content.type == "text":
-                    logging.info(content.text)
+                    logger.info(content.text)
                     assistant_content.append(content)
                     if len(response.content) == 1:
                         process_query = False
@@ -54,7 +60,7 @@ class MCP_ChatBot:
                     tool_args = content.input
                     tool_name = content.name
 
-                    logging.info(f"Calling tool {tool_name} with args {tool_args}")
+                    logger.info(f"Calling tool {tool_name} with args {tool_args}")
 
                     # Call a tool
                     # result = execute_tool(tool_name, tool_args)
@@ -84,7 +90,7 @@ class MCP_ChatBot:
                         len(response.content) == 1
                         and response.content[0].type == "text"
                     ):
-                        # logging.info(response.content[0].text)
+                        # logger.info(response.content[0].text)
                         process_query = False
 
         return response.content[0].text
@@ -126,9 +132,8 @@ class MCP_ChatBot:
                 response = await session.list_tools()
 
                 tools = response.tools
-                logging.info(
-                    "\nConnected to server with tools:", [tool.name for tool in tools]
-                )
+                tools_names = [tool.name for tool in tools]
+                logger.info(f"\nConnected to server with tools: {tools_names}")
 
                 self.available_tools = [
                     {

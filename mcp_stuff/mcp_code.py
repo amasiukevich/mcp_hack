@@ -5,7 +5,6 @@ from mcp_stuff.functions import (
     get_all_shipments as get_all_shipments_func,
     get_shipment_by_bol_id as get_shipment_by_bol_id_func,
     get_shipment_by_id as get_shipment_by_id_func,
-    get_shipper_by_email as get_shipper_by_email_func,
     update_shipment_eta as update_shipment_eta_func,
 )
 
@@ -16,19 +15,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from mcp_stuff.data_schema import Shipment
 
 load_dotenv()
 
 mcp = FastMCP("TMS MCP")
 
-
-@mcp.tool()
-def get_shipper_by_email(email: str) -> Optional[Dict[Any, Any]]:
-    """
-    Retrieve a shipper record from the database by its email.
-    """
-    return get_shipper_by_email_func(email)
 
 @mcp.tool()
 def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
