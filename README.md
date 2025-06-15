@@ -3,6 +3,11 @@
 When you'll start testing the web app, let us know. We will update the token for email sender. 
 It expires too fast, due to the GCP app being in test mode.
 
+
+## Demo
+
+[![3PL Copilot Demo](3pl_copilot_demo.mp4)](3pl_copilot_demo.mp4)
+
 ## Essentials
 
 Demo page: http://plcopilot.xyz
