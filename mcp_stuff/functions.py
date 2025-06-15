@@ -1,13 +1,13 @@
 import os
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
-from database.data_schema import Shipment, Courier
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from datetime import timedelta, datetime
+from database.data_schema import Courier, Shipment
 
 load_dotenv()
 
@@ -50,7 +50,6 @@ def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
         )
 
 
-
 def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     """
     Retrieve a shipment record from the database by its BOL ID.
@@ -85,6 +84,7 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
         raise SQLAlchemyError(
             f"Error retrieving shipment with BOL ID {bol_id}: {str(e)}"
         )
+
 
 def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
     """
@@ -136,6 +136,7 @@ def get_shipments_by_courier_contact(contact_number: str) -> list[Shipment]:
     else:
         return []
 
+
 def update_shipment_eta(shipment_id: int, seconds: int) -> Shipment:
     """
     Takes the shipment id and the number of seconds to add to the eta.
@@ -154,7 +155,7 @@ def update_shipment_eta(shipment_id: int, seconds: int) -> Shipment:
     SessionClass = sessionmaker(bind=engine)
     db = SessionClass()
 
-    if seconds > 0: 
+    if seconds > 0:
         shipment = db.query(Shipment).filter_by(shipment_id=shipment_id).first()
         if not shipment.eta:
             shipment.eta = datetime.now() + timedelta(seconds=seconds)
@@ -198,7 +199,8 @@ if __name__ == "__main__":
     print(f"Updated shipment eta: {shipment['eta']}")
     print("--------------------------------")
 
-    shipment = reset_shipment_eta(SHIPMENT_ID, datetime.strptime(OG_ETA, '%Y-%m-%d %H:%M:%S.%f'))
+    shipment = reset_shipment_eta(
+        SHIPMENT_ID, datetime.strptime(OG_ETA, "%Y-%m-%d %H:%M:%S.%f")
+    )
     print(f"Reset shipment eta: {shipment['eta']}")
     print("--------------------------------")
-

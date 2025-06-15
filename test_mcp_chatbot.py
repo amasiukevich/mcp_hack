@@ -1,11 +1,11 @@
-from mcp_stuff.mcp_llm_engine import (
-    MCP_ChatBot, 
-    get_shipper_email, 
-    get_courier_number, 
-    get_shipment_order
-)
-
 import asyncio
+
+from mcp_stuff.mcp_llm_engine import (
+    MCP_ChatBot,
+    get_courier_number,
+    get_shipment_order,
+    get_shipper_email,
+)
 
 
 async def main(query: str):
@@ -20,5 +20,10 @@ async def main(query: str):
     print(f"Courier number: {courier_number}")
     print(f"Shipment order: {shipment_order}")
 
+
 if __name__ == "__main__":
-    asyncio.run(main(query="Hey, operating on the shipment id 7, I will be delayed by 3 hours. Please update the eta."))
+    asyncio.run(
+        main(
+            query="Hey, operating on the shipment id 7, I will be delayed by 3 hours. Please update the eta."
+        )
+    )

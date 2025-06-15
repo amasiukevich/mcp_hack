@@ -1,20 +1,20 @@
-import os
 from typing import Any, Dict, Optional
+
+from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
 
 from mcp_stuff.functions import (
     get_all_shipments as get_all_shipments_func,
+)
+from mcp_stuff.functions import (
     get_shipment_by_bol_id as get_shipment_by_bol_id_func,
+)
+from mcp_stuff.functions import (
     get_shipment_by_id as get_shipment_by_id_func,
+)
+from mcp_stuff.functions import (
     update_shipment_eta as update_shipment_eta_func,
 )
-
-from database.data_schema import Shipment
-from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker
-
 
 load_dotenv()
 
@@ -56,6 +56,7 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     """
     return get_shipment_by_bol_id_func(bol_id)
 
+
 @mcp.tool()
 def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
     """
@@ -69,6 +70,7 @@ def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
 
     """
     return get_all_shipments_func(shipper_email)
+
 
 @mcp.tool()
 def update_shipment_eta(shipment_id: int, seconds: int) -> Optional[Dict[Any, Any]]:
