@@ -193,7 +193,8 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 credentials.json
-token.json
+gmail_integration/token.json
+gmail_integration/token_credentials.json
 
 # /database/test_shipments.db
 # *.db
