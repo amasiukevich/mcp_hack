@@ -1,3 +1,9 @@
+import os
+import sys
+import requests
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -16,12 +22,35 @@ from mcp_stuff.reply_handler import (
 )
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as needed for security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 chatbot = MCP_ChatBot()
 
 gmail_client = GmailClient(
-    credentials_file="gmail_integration/credentials.json",
-    token_file="gmail_integration/token.json",
+    credentials_file="credentials.json",
+    token_file="token.json",
 )
+
+# Load environment variables
+load_dotenv()
+
+# Handle SSL certificates for macOS
+if sys.platform == "darwin" and os.environ.get("ADD_ADHOC_CERT") == "true":
+    os.environ["REQUESTS_CA_BUNDLE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+    os.environ["SSL_CERT_FILE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+
+
+token = os.getenv("TELEGRAM_BOT_TOKEN")
+if not token:
+    raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables")
 
 
 @app.post("/query")
@@ -95,6 +124,15 @@ async def courier_shipment_updates(phone_number: str, shipment_query: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/set_tg_bot_name/{name}")
+async def set_name(name: str):
+    """Endpoint to update the bot's display name via URL parameter."""
+    url = f"https://api.telegram.org/bot{token}/setMyName"
+    response = requests.post(url, data={'name': name})
+    if response.ok:
+        return response.json()
+    return response.json(), response.status_code
 
 if __name__ == "__main__":
     import uvicorn

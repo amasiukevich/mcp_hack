@@ -1,16 +1,114 @@
-# mcp_hack
-A repository for the MCP hackathon from Ogon.AI
+# 3PL Copilot
 
+## Essentials
 
-## Clone the repository
+Demo page: http://plcopilot.xyz
 
-```
-git clone --recurse-submodules https://github.com/Ogon-AI/mcp_hack.git
-```
+Telegram bot: https://t.me/3pl_copilot_bot
 
-
-## How to fetch latest UI
+Email through which you can login to the admin page
 
 ```
-git submodule update --remote freight-copilot
+email: 3plcopilot@gmail.com
+password: 0cf/54Fd~$D<
+```
+
+Email on which you can get response when updating ETA through courier
+
+```
+email: shipper.3plcopilot@gmail.com
+password: ?0Po52Nj1)i-
+```
+
+## Presentation
+
+Pitch deck can be found [here](presentation.pdf)
+
+
+## History
+
+Project was created entirely from scratch during the hackathon.
+
+What was developed:
+
+1. Admin page through which user can connect email (only emails added to the Google Cloud Platform as test users due to app being in test mode), TMS and change the name of the telegram bot.
+2. MCP server which can get and update data in the TMS.
+3. Telegram bot which can recieve messages from couriers and ask MCP server to update the data in the TMS.
+4. Gmail client which can recieves emails from the users and answer their questions about the shipments.
+
+## Use cases
+
+1. Shipper asks broker about shipment status
+
+```mermaid
+sequenceDiagram
+    participant Shipper as Shipper (Email)
+    participant Broker as Broker (Email)
+    participant Integration as Integration Layer
+    participant MCP_AI as MCP AI Copilot
+    participant TMS as TMS Web App
+
+    Shipper->>Broker: Email load request
+    Integration->>Broker: Listen for new messages
+    Integration->>MCP_AI: Parse email content
+    MCP_AI->>TMS: Look up relevant TMS data
+    MCP_AI->>Broker: Generate response
+    Broker->>Shipper: Auto-respond on behalf of broker
+```
+2. Carrier updates the shipment status 
+
+```mermaid
+sequenceDiagram
+    participant Carrier as Carrier (Telegram)
+    participant Broker as Broker (Telegram)
+    participant Integration as Integration Layer
+    participant MCP_AI as MCP AI Copilot
+    participant TMS as TMS Web App
+
+    Carrier->>Broker: Send status update
+    Integration->>Broker: Listen for new messages
+    Integration->>MCP_AI: Parse message content
+    MCP_AI->>TMS: Update status in TMS
+    MCP_AI->>Broker: Generate response
+    Broker->>Carrier: Auto-respond on behalf of broker
+```
+
+## Local installation
+
+1. Clone the repository
+
+```
+git clone --recurse-submodules https://github.com/Ogon-AI/3pl-copilot.git
+```
+
+2. Create a virtual environment
+
+```
+python -m venv venv && source venv/bin/activate
+```
+
+3. Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+4. Create .env file
+
+
+```
+OPENAI_API_KEY=<your_openai_api_key>
+DB_PATH=sqlite:///database/test_shipments.db
+ANTHROPIC_API_KEY=<your_anthropic_api_key>
+TELEGRAM_BOT_TOKEN=<your_telegram_bot_token>
+```
+
+5. Create [credentials](https://developers.google.com/workspace/gmail/api/quickstart/python) for the Google Cloud Platform
+
+
+6. Run the application
+
+```
+chmod +x run_all.sh
+./run_all.sh
 ```

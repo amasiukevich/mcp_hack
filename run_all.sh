@@ -52,19 +52,25 @@ fi
 
 # Run frontend
 echo "Starting frontend..."
-(cd freight-copilot && npm run dev > ../logs/frontend.log 2>&1) &
+(cd freight-copilot && npm i && npm run dev > ../logs/frontend.log 2>&1) &
 FRONTEND_PID=$!
+
+# Run Telegram bot
+echo "Starting Telegram bot..."
+python telegram_integration/bot.py > logs/bot.log 2>&1 &
+BOT_PID=$!
 
 echo "All services are running!"
 echo "MCP service: PID $MCP_PID (logs in logs/mcp.log)"
 echo "API Auth service: PID $API_AUTH_PID (logs in logs/api_auth.log)"
 echo "Processing service: PID $PROCESSING_PID (logs in logs/processing.log)"
 echo "Frontend: PID $FRONTEND_PID (logs in logs/frontend.log)"
+echo "Telegram bot: PID $BOT_PID (logs in logs/bot.log)"
 
 # Function to handle shutdown
 cleanup() {
     echo "Shutting down services..."
-    kill $MCP_PID $API_AUTH_PID $PROCESSING_PID $FRONTEND_PID 2>/dev/null
+    kill $MCP_PID $API_AUTH_PID $PROCESSING_PID $FRONTEND_PID $BOT_PID 2>/dev/null
     exit 0
 }
 
@@ -75,7 +81,7 @@ trap cleanup SIGINT
 echo "Press Ctrl+C to stop all services"
 while true; do
     # Check if any service has died
-    for service_pid in $MCP_PID $API_AUTH_PID $PROCESSING_PID $FRONTEND_PID; do
+    for service_pid in $MCP_PID $API_AUTH_PID $PROCESSING_PID $FRONTEND_PID $BOT_PID; do
         if ! ps -p $service_pid > /dev/null; then
             service_name=""
             log_file=""
@@ -91,6 +97,9 @@ while true; do
             elif [ "$service_pid" = "$FRONTEND_PID" ]; then
                 service_name="Frontend"
                 log_file="logs/frontend.log"
+            elif [ "$service_pid" = "$BOT_PID" ]; then
+                service_name="Telegram bot"
+                log_file="logs/bot.log"
             fi
             echo "WARNING: $service_name (PID $service_pid) has stopped. Check $log_file for details."
         fi

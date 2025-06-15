@@ -1,4 +1,6 @@
 import os
+import sys
+import urllib.parse
 
 import aiohttp
 from dotenv import load_dotenv
@@ -11,9 +13,18 @@ from telegram.ext import (
     filters,
 )
 
+
+load_dotenv()
+
+# Handle SSL certificates for macOS
+if sys.platform == "darwin" and os.environ.get("ADD_ADHOC_CERT") == "true":
+    os.environ["REQUESTS_CA_BUNDLE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+    os.environ["SSL_CERT_FILE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+
+
 # In-memory set to track users who have shared contact info
-shared_contacts = set()
-api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
+shared_contacts = dict()
+api_base_url =  "http://0.0.0.0:8000"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -47,7 +58,7 @@ async def update_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             and user_msg.replace("+", "").replace("-", "").isdigit()
             and 7 < len(user_msg) < 20
         ):
-            shared_contacts.add(user_id)
+            shared_contacts[user_id] = user_msg
             keyboard = [[KeyboardButton("My shipments")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             await update.message.reply_text(
@@ -59,9 +70,9 @@ async def update_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
     else:
         user_msg = update.message.text
-        # TODO: Use the actual contact number from shared_contacts
-        contact_number = "%28974%29583-4681"
-        url = f"{api_base_url}/courier_shipment_updates?phone_number={contact_number}&shipment_query={user_msg}"
+        contact_number = shared_contacts.get(user_id)
+        encoded_contact_number = urllib.parse.quote_plus(contact_number) if contact_number else ''
+        url = f"{api_base_url}/courier_shipment_updates?phone_number={encoded_contact_number}&shipment_query={user_msg}"
         headers = {"accept": "application/json"}
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, data="") as resp:
@@ -86,9 +97,11 @@ async def request_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle the contact information sent by the user and store user id."""
+    user_id = update.message.from_user.id
     contact = update.message.contact
     if contact:
-        shared_contacts.add(contact.user_id)
+        
+        shared_contacts[user_id] = contact.phone_number
         keyboard = [[KeyboardButton("My shipments")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(
@@ -98,7 +111,8 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def fetch_shipments(contact_number: str, api_base_url: str):
     """Fetch shipments from the API for the given contact number."""
-    url = f"{api_base_url}/get_courier_shipments?contact_number={contact_number}"
+    encoded_contact_number = urllib.parse.quote_plus(contact_number) if contact_number else ''
+    url = f"{api_base_url}/get_courier_shipments?contact_number={encoded_contact_number}"
     headers = {"accept": "application/json"}
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as resp:
@@ -116,9 +130,7 @@ async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Please share your phone number first.")
         return
 
-    # TODO: Use the actual contact number from shared_contacts
-    # contact_number = shared_contacts.get(user_id)
-    contact_number = "%28974%29583-4681"
+    contact_number = shared_contacts.get(user_id)
     shipments_data = await fetch_shipments(contact_number, api_base_url)
     if shipments_data is None:
         await update.message.reply_text(
@@ -162,7 +174,7 @@ async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     # Load environment variables from .env
-    load_dotenv()
+    load_dotenv(".env")
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         print("Error: TELEGRAM_BOT_TOKEN not found in environment.")
