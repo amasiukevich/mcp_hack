@@ -6,7 +6,7 @@ It expires too fast, due to the GCP app being in test mode.
 
 ## Demo
 
-[![3PL Copilot Demo](3pl_copilot_demo.mp4)](3pl_copilot_demo.mp4)
+[Link](https://www.loom.com/share/3997d14b5b8145f59814e26320915ce3?sid=cc4a44c3-a75f-43d0-b3f5-7f184503f3fc) to the demo. Or you can download [file](3pl_copilot_demo.mp4) from git.
 
 ## Essentials
 
