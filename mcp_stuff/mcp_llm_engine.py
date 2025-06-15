@@ -36,7 +36,6 @@ class MCP_ChatBot:
             messages=messages,
         )
 
-        breakpoint()
         process_query = True
 
         while process_query:
