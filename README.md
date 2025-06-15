@@ -43,6 +43,23 @@ sequenceDiagram
     MCP_AI->>Broker: Generate response
     Broker->>Shipper: Auto-respond on behalf of broker
 ```
+2. Carrier updates the shipment status 
+
+```mermaid
+sequenceDiagram
+    participant Carrier as Carrier (Telegram)
+    participant Broker as Broker (Telegram)
+    participant Integration as Integration Layer
+    participant MCP_AI as MCP AI Copilot
+    participant TMS as TMS Web App
+
+    Carrier->>Broker: Send status update
+    Integration->>Broker: Listen for new messages
+    Integration->>MCP_AI: Parse message content
+    MCP_AI->>TMS: Update status in TMS
+    MCP_AI->>Broker: Generate response
+    Broker->>Carrier: Auto-respond on behalf of broker
+```
 
 ## Local installation
 
