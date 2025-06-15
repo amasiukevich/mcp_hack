@@ -202,3 +202,5 @@ gmail_integration/token_credentials.json
 .DS_Store
 
 token.json
+token_auth.json
+credentials_auth.json
