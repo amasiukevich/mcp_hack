@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 # In-memory set to track users who have shared contact info
 shared_contacts = set()
+api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a greeting message and ask for contact info if not already shared."""
@@ -25,8 +26,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle user messages. If contact not shared, ask for phone number manually."""
+async def update_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send user message as shipment status update to the API and reply with API response."""
     user_id = update.message.from_user.id
     if user_id not in shared_contacts:
         user_msg = update.message.text
@@ -42,7 +43,18 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
     else:
         user_msg = update.message.text
-        await update.message.reply_text(f"Received {user_msg}")
+        # TODO: Use the actual contact number from shared_contacts
+        contact_number = '%28974%29583-4681'
+        url = f"{api_base_url}/courier_shipment_updates?phone_number={contact_number}&shipment_query={user_msg}"
+        headers = {"accept": "application/json"}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, data='') as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    reply = data.get("response", "Update successful.")
+                else:
+                    reply = f"Failed to update status. Error code: {resp.status}"
+        await update.message.reply_text(reply)
 
 async def request_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Ask the user to share their phone number."""
@@ -86,7 +98,6 @@ async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # TODO: Use the actual contact number from shared_contacts
     # contact_number = shared_contacts.get(user_id)
     contact_number = '%28974%29583-4681'
-    api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
     shipments_data = await fetch_shipments(contact_number, api_base_url)
     if shipments_data is None:
         await update.message.reply_text("Failed to retrieve shipments. Please try again later.")
@@ -134,7 +145,7 @@ def main():
     app.add_handler(CommandHandler("phone", request_phone))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     app.add_handler(MessageHandler(filters.Regex(r'^(My shipment|my shipment|My shipments|my shipments)$'), my_shipments))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, update_status))
 
     # Start polling and run until interrupted
     app.run_polling()
