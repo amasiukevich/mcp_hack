@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 # In-memory set to track users who have shared contact info
 shared_contacts = set()
-api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
+api_base_url =  "http://0.0.0.0:8000"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a greeting message and ask for contact info if not already shared."""
@@ -130,7 +130,7 @@ async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     # Load environment variables from .env
-    load_dotenv()
+    load_dotenv("../.env")
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         print("Error: TELEGRAM_BOT_TOKEN not found in environment.")
