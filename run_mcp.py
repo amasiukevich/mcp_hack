@@ -1,6 +1,7 @@
 import os
 import requests
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from mcp_stuff.mcp_llm_engine import (
@@ -20,6 +21,16 @@ from reply_handler import (
 )
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as needed for security
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 chatbot = MCP_ChatBot()
 
 gmail_client = GmailClient(
