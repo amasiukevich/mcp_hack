@@ -26,7 +26,7 @@ What was developed:
 
 ## Use cases
 
-1. Shipper asks broker for shipment update
+1. Shipper asks broker about shipment status
 
 ```mermaid
 sequenceDiagram
