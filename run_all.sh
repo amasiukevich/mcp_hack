@@ -52,7 +52,7 @@ fi
 
 # Run frontend
 echo "Starting frontend..."
-(cd freight-copilot && npm run dev > ../logs/frontend.log 2>&1) &
+(cd freight-copilot && npm i && npm run dev > ../logs/frontend.log 2>&1) &
 FRONTEND_PID=$!
 
 # Run Telegram bot
