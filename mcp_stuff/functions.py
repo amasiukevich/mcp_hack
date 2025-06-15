@@ -1,14 +1,15 @@
 import os
 from typing import Any, Dict, Optional
 
-from database.data_schema import Shipment
+from database.data_schema import Shipment, Courier
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
+from datetime import timedelta, datetime
 
+load_dotenv()
 
 
 def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
@@ -110,5 +111,95 @@ def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
         raise SQLAlchemyError(f"Error retrieving shipments for email {email}: {str(e)}")
 
 
+def get_shipments_by_courier_contact(contact_number: str) -> list[Shipment]:
+    """
+    Retrieve a courier from the database by their contact number.
+
+    Args:
+        contact_number (str): Contact number of the courier
+
+    Returns:
+        Courier: Courier object if found, None otherwise
+    """
+
+    engine = create_engine(
+        os.getenv("DB_PATH"),
+        connect_args={"check_same_thread": False},  # Required for SQLite
+    )
+    SessionClass = sessionmaker(bind=engine)
+    db = SessionClass()
+
+    courier = db.query(Courier).filter_by(contact_number=contact_number).first()
+    if courier:
+        shipments = db.query(Shipment).filter_by(courier_id=courier.courier_id).all()
+        return shipments
+    else:
+        return []
+
+def update_shipment_eta(shipment_id: int, seconds: int) -> Shipment:
+    """
+    Takes the shipment id and the number of seconds to add to the eta.
+    Returns the updated shipment.
+    Args:
+        shipment_id (int): The id of the shipment to update
+        seconds (int): The number of seconds to add to the eta
+
+    Returns:
+        Shipment: The updated shipment
+    """
+    engine = create_engine(
+        os.getenv("DB_PATH"),
+        connect_args={"check_same_thread": False},  # Required for SQLite
+    )
+    SessionClass = sessionmaker(bind=engine)
+    db = SessionClass()
+
+    if seconds > 0: 
+        shipment = db.query(Shipment).filter_by(shipment_id=shipment_id).first()
+        if not shipment.eta:
+            shipment.eta = datetime.now() + timedelta(seconds=seconds)
+        else:
+            shipment.eta = shipment.eta + timedelta(seconds=seconds)
+        db.commit()
+        return shipment.to_dict()
+    else:
+        raise ValueError("Seconds must be greater than 0")
+
+
+
+def reset_shipment_eta(shipment_id: int, datetime: datetime) -> Shipment:
+    """
+    Reset the eta of a shipment in the database.
+    """
+    engine = create_engine(
+        os.getenv("DB_PATH"),
+        connect_args={"check_same_thread": False},  # Required for SQLite
+    )
+    SessionClass = sessionmaker(bind=engine)
+    db = SessionClass()
+
+    shipment = db.query(Shipment).filter_by(shipment_id=shipment_id).first()
+    shipment.eta = datetime
+    db.commit()
+    return shipment.to_dict()
+
+
 if __name__ == "__main__":
-    mcp.run()
+
+    SHIPMENT_ID = 7
+    SECONDS = 3 * 3600
+    OG_ETA = "2025-06-27 18:24:32.121214"
+
+    # OG_ETA = datetime.strptime(MY_DATE, '%Y-%m-%dT%H:%M:%S.%f')
+
+    print(f"Original shipment eta: {OG_ETA}")
+    print("--------------------------------")
+
+    shipment = update_shipment_eta(SHIPMENT_ID, SECONDS)
+    print(f"Updated shipment eta: {shipment['eta']}")
+    print("--------------------------------")
+
+    shipment = reset_shipment_eta(SHIPMENT_ID, datetime.strptime(OG_ETA, '%Y-%m-%d %H:%M:%S.%f'))
+    print(f"Reset shipment eta: {shipment['eta']}")
+    print("--------------------------------")
+

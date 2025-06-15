@@ -4,11 +4,12 @@ from mcp_stuff.mcp_llm_engine import MCP_ChatBot
 
 app = FastAPI()
 
+chatbot = MCP_ChatBot()
+
 
 @app.post("/query")
 async def process_query(query: str):
     try:
-        chatbot = MCP_ChatBot()
         result = await chatbot.connect_to_server_and_run(query=query)
         return {"response": result}
     except Exception as e:
@@ -38,9 +39,19 @@ async def get_courier_shipments(contact_number: str):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/courier_shipment_updates")
+async def courier_shipment_updates(phone_number: str, shipment_query: str):
+    try:
+        # result = await chatbot.connect_to_server_and_run(query=query)
+        result = "Updated shipment eta to 2025-06-27 18:24:32.121214"
+        # TODO: Send email notification to the shipper here
+        return {"response": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
