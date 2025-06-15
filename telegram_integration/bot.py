@@ -1,38 +1,11 @@
 import os
+import aiohttp
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 
 # In-memory set to track users who have shared contact info
 shared_contacts = set()
-
-# Hardcoded shipment data for demonstration
-shipments_data = [
-    {
-        "shipment_id": 7,
-        "shipment_status": "in_transit",
-        "eta": "2025-06-27T18:24:32.121214",
-        "delivery_date": None,
-        "dest_address": "1175 Reyes Crossing, East Olivia, KY 43005",
-        "source_address": "8107 Rebecca Dale Apt. 074, Roytown, MA 76155"
-    },
-    {
-        "shipment_id": 15,
-        "shipment_status": "delivered",
-        "eta": "2025-06-24T04:57:46.303766",
-        "delivery_date": "2025-06-30T01:46:11.789912",
-        "dest_address": "981 Keith Manors Apt. 090, Riosland, TN 70984",
-        "source_address": "4193 Stephanie Terrace Apt. 816, East Matthew, ID 31132"
-    },
-    {
-        "shipment_id": 35,
-        "shipment_status": "pending",
-        "eta": "2025-07-07T16:32:40.535072",
-        "delivery_date": "2025-07-09T16:09:33.931047",
-        "dest_address": "7884 Amber Roads Apt. 696, Aprilborough, VI 95700",
-        "source_address": "3224 Anthony Dale Suite 238, West Georgefort, WA 19629"
-    }
-]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a greeting message and ask for contact info if not already shared."""
@@ -91,11 +64,35 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
 
+async def fetch_shipments(contact_number: str, api_base_url: str):
+    """Fetch shipments from the API for the given contact number."""
+    url = f"{api_base_url}/get_courier_shipments?contact_number={contact_number}"
+    headers = {"accept": "application/json"}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                return data.get("response", [])
+            else:
+                return None
+
 async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send formatted shipment data to the user."""
     user_id = update.message.from_user.id
     if user_id not in shared_contacts:
         await update.message.reply_text("Please share your phone number first.")
+        return
+
+    # TODO: Use the actual contact number from shared_contacts
+    # contact_number = shared_contacts.get(user_id)
+    contact_number = '%28974%29583-4681'
+    api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
+    shipments_data = await fetch_shipments(contact_number, api_base_url)
+    if shipments_data is None:
+        await update.message.reply_text("Failed to retrieve shipments. Please try again later.")
+        return
+    if not shipments_data:
+        await update.message.reply_text("No shipments found for your contact number.")
         return
 
     def format_shipment(shipment):
