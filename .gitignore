@@ -200,3 +200,5 @@ gmail_integration/token_credentials.json
 # *.db
 
 .DS_Store
+
+token.json
