@@ -11,12 +11,6 @@ load_dotenv()
 
 
 
-def get_shipper_by_email(email: str) -> Optional[Dict[Any, Any]]:
-    """
-    Retrieve a shipper record from the database by its email.
-    """
-    pass
-
 def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
     """
     Retrieve a shipment record from the database by its ID.
