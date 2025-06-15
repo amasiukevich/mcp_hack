@@ -1,16 +1,41 @@
-# mcp_hack
-A repository for the MCP hackathon from Ogon.AI
+# 3PL Copilot
+
+## Essentials
+
+Demo page: http://plcopilot.xyz/
+
+Telegram bot: https://t.me/3pl_copilot_bot
+
+Email threw which you can reach the bot: 3plcopilot@gmail.com
+
+## Presentation
+
+Pitch deck can be found [here](presentation.pdf)
 
 
-## Clone the repository
+## Locall installation
+
+1. Clone the repository
 
 ```
-git clone --recurse-submodules https://github.com/Ogon-AI/mcp_hack.git
+git clone --recurse-submodules https://github.com/Ogon-AI/3pl-copilot.git
 ```
 
-
-## How to fetch latest UI
+2. Create a virtual environment
 
 ```
-git submodule update --remote freight-copilot
+python -m venv venv && source venv/bin/activate
+```
+
+3. Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+4. Run the application
+
+```
+chmod +x run_all.sh
+./run_all.sh
 ```
