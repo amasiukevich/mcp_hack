@@ -166,7 +166,6 @@ def update_shipment_eta(shipment_id: int, seconds: int) -> Shipment:
         raise ValueError("Seconds must be greater than 0")
 
 
-
 def reset_shipment_eta(shipment_id: int, datetime: datetime) -> Shipment:
     """
     Reset the eta of a shipment in the database.
