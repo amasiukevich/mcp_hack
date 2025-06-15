@@ -17,7 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     else:
-        keyboard = [[KeyboardButton("My orders")]]
+        keyboard = [[KeyboardButton("My shipments")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(
             "Welcome back! What would you like to do?",
@@ -32,7 +32,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Simple phone number validation (basic, can be improved)
         if user_msg and user_msg.replace('+', '').replace('-', '').isdigit() and 7 < len(user_msg) < 20:
             shared_contacts.add(user_id)
-            keyboard = [[KeyboardButton("My orders")]]
+            keyboard = [[KeyboardButton("My shipments")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
         else:
@@ -59,19 +59,19 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
         shared_contacts.add(contact.user_id)
-        keyboard = [[KeyboardButton("My orders")]]
+        keyboard = [[KeyboardButton("My shipments")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
 
-async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send hardcoded order data to the user."""
+async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send hardcoded shipment data to the user."""
     user_id = update.message.from_user.id
     if user_id not in shared_contacts:
         await update.message.reply_text("Please share your phone number first.")
         return
-    # Hardcoded order data
-    orders = "Your orders:\n1. Order #12345 - Status: Delivered\n2. Order #67890 - Status: In progress"
-    await update.message.reply_text(orders)
+    # Hardcoded shipment data
+    shipments = "Your shipments:\n1. Shipment #12345 - Status: Delivered\n2. Shipment #67890 - Status: In progress"
+    await update.message.reply_text(shipments)
 
 def main():
     # Load environment variables from .env
@@ -86,10 +86,10 @@ def main():
 
     # Handlers for commands and messages
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("my_orders", my_orders))
+    app.add_handler(CommandHandler("my_shipments", my_shipments))
     app.add_handler(CommandHandler("phone", request_phone))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    app.add_handler(MessageHandler(filters.Regex(r'^(My order|my order|My orders|my orders)$'), my_orders))
+    app.add_handler(MessageHandler(filters.Regex(r'^(My shipment|my shipment|My shipments|my shipments)$'), my_shipments))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Start polling and run until interrupted
