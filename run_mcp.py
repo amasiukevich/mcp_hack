@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +39,13 @@ gmail_client = GmailClient(
 
 # Load environment variables
 load_dotenv()
+
+# Handle SSL certificates for macOS
+if sys.platform == "darwin" and os.environ.get("ADD_ADHOC_CERT") == "true":
+    os.environ["REQUESTS_CA_BUNDLE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+    os.environ["SSL_CERT_FILE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+
+
 token = os.getenv("TELEGRAM_BOT_TOKEN")
 if not token:
     raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables")
