@@ -29,7 +29,7 @@ app.add_middleware(
 # Add CORS middleware to allow requests from frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Update with your frontend URL
+    allow_origins=["http://localhost:8080,https://plcopilot.xyz:8080,http://plcopilot.xyz:8080,http://plcopilot.xyz,https://plcopilot.xyz"],  # Update with your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,4 +140,4 @@ async def check_auth_status():
 
 
 if __name__ == "__main__":
-    uvicorn.run("run_api_auth:app", host="0.0.0.0", port=8099, reload=True)
+    uvicorn.run("run_api_auth:app", host="0.0.0.0", port=8099, reload=True, proxy_headers=True)
