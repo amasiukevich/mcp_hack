@@ -28,17 +28,17 @@ mkdir -p logs
 # Start services in separate terminals with output logging
 # Run MCP service
 echo "Starting MCP service..."
-python run_mcp.py > logs/mcp.log 2>&1 &
+(source .venv/bin/activate && python run_mcp.py > logs/mcp.log 2>&1) &
 MCP_PID=$!
 
 # Run API Auth service
 echo "Starting API Auth service..."
-python run_api_auth.py > logs/api_auth.log 2>&1 &
+(source .venv/bin/activate && python run_api_auth.py > logs/api_auth.log 2>&1) &
 API_AUTH_PID=$!
 
 # Run Processing service with explicit path and error handling
 echo "Starting Processing service..."
-python run_processing.py > logs/processing.log 2>&1 &
+(source .venv/bin/activate && python run_processing.py > logs/processing.log 2>&1) &
 PROCESSING_PID=$!
 
 # Check if processing service started successfully
@@ -57,7 +57,7 @@ FRONTEND_PID=$!
 
 # Run Telegram bot
 echo "Starting Telegram bot..."
-python telegram_integration/bot.py > logs/bot.log 2>&1 &
+(source .venv/bin/activate && python telegram_integration/bot.py > logs/bot.log 2>&1) &
 BOT_PID=$!
 
 echo "All services are running!"

@@ -194,7 +194,7 @@ class GmailClient:
                     userId="me",
                     labelIds=["UNREAD", "INBOX"],
                     maxResults=max_results,
-                    q="category:primary",
+                    # q="category:primary",
                 )
                 .execute()
             )

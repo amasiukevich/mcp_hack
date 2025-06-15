@@ -7,9 +7,9 @@ from gmail_integration.gmail_client import Email, GmailClient
 
 mcp_api_url = "http://0.0.0.0:8000"
 
-def call_mcp_server(query: str) -> str:
+def call_mcp_server(email: str, query: str) -> str:
     url = mcp_api_url + "/query"
-    params = {"query": query}
+    params = {"email": email, "query": query}
     headers = {"accept": "application/json"}
 
     try:
@@ -38,16 +38,15 @@ if __name__ == "__main__":
 
     while True:
 
-        logging.info("Getting unread messages...")
+        print("Getting unread messages...")
         emails: list[Email] = gmail_client.get_unread_messages(
             max_results=10, mark_as_read=True
         )
+        print(f"Found {len(emails)} unread messages")
 
         for email in emails:
-            query = create_query(email)
-
-            result = call_mcp_server(query=query)
-            logging.info(f"Request: {query}")
+            result = call_mcp_server(email=email.sender, query=email.body)
+            logging.info(f"Request: {email.sender} {email.body}")
             logging.info(f"Response: {result}")
 
             gmail_client.reply_to_email(email, result)
