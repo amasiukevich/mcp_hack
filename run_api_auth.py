@@ -36,8 +36,8 @@ app.add_middleware(
 )
 
 # Define where your credentials.json and token.json will be stored on the server
-CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), "credentials.json")
-TOKEN_FILE = os.path.join(os.path.dirname(__file__), "token.json")
+CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), "credentials_auth.json")
+TOKEN_FILE = os.path.join(os.path.dirname(__file__), "token_auth.json")
 
 # The scopes required for your application
 SCOPES = ["https://mail.google.com/"]  # For full read/write access
