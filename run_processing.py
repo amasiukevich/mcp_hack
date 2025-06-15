@@ -7,7 +7,7 @@ from llm_function_calling.llm_engine import LLMEngine
 
 
 def call_mcp_server(query: str) -> str:
-    url = "http://0.0.0.0:8000/query"
+    url = "http://0.0.0.0:8001/query"
     params = {"query": query}
     headers = {"accept": "application/json"}
     
@@ -32,7 +32,7 @@ def create_query(email: Email) -> str:
 if __name__ == "__main__":
     gmail_client = GmailClient(
         credentials_file="gmail_integration/credentials.json",
-        token_file="gmail_integration/token.json",
+        token_file="token.json",
     )
 
     while True:
