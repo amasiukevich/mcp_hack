@@ -7,18 +7,22 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from database.data_schema import Courier, Shipment
+from database.data_schema import (
+    Courier, 
+    Shipment, 
+    Shipper
+)
 
 load_dotenv()
 
-
-def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
+def get_shipment_by_id(email: str, shipment_id: int) -> Optional[Dict[Any, Any]]:
     """
-    Retrieve a shipment record from the database by its ID.
+    Retrieve a shipment record from the database by its ID and the shipper's email.
+    Filters the shipment by the shipper's email and the shipment's id.
 
     Args:
-        db (Session): SQLAlchemy database session
-        shipment_id (int): Unique identifier of the shipment
+        email (str): Email of the shipper
+        shipment_id (int): Unique identlifier of the shipment
 
     Returns:
         Optional[Dict[Any, Any]]: Dictionary containing shipment details if found, None otherwise
@@ -33,15 +37,30 @@ def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
     SessionClass = sessionmaker(bind=engine)
     db = SessionClass()
 
+    if not email:
+        raise SQLAlchemyError("Email is not provided. Cannot retrieve shipment info.")
+    
     try:
-        shipment = (
-            db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
+        
+        shipper = db.query(Shipper).filter(Shipper.email == email).first()
+        if not shipper:
+            raise SQLAlchemyError("No shipper found with the given email.")
+        
+        shipments = (
+            db.query(Shipment)
+            .filter(
+                Shipment.shipment_id == shipment_id,
+                Shipment.shipper_id == shipper.shipper_id
+            )
+            .first()
         )
 
-        if not shipment:
+        print(f"Shipments: {shipments}")
+
+        if not shipments:
             return None
 
-        return shipment.to_dict()  # Assuming your model has a to_dict method
+        return shipments.to_dict()
 
     except SQLAlchemyError as e:
         # Log the error here if you have a logging system
@@ -50,13 +69,14 @@ def get_shipment_by_id(shipment_id: int) -> Optional[Dict[Any, Any]]:
         )
 
 
-def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
+def get_shipment_by_bol_id(email: str, bol_id: int) -> Optional[Dict[Any, Any]]:
     """
-    Retrieve a shipment record from the database by its BOL ID.
+    Retrieve a shipment record from the database by its BOL ID and the shipper's email.
+    Filters the shipment by the shipper's email and the BOL ID.
 
     Args:
-        db (Session): SQLAlchemy database session
-        bol_id (str): Unique identifier of the BOL
+        email (str): Email of the shipper
+        bol_id (int): Unique identifier of the BOL
 
     Returns:
         Optional[Dict[Any, Any]]: Dictionary containing shipment details if found, None otherwise
@@ -64,7 +84,6 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     Raises:
         SQLAlchemyError: If there's any database-related error
     """
-
     engine = create_engine(
         os.getenv("DB_PATH"),
         connect_args={"check_same_thread": False},  # Required for SQLite
@@ -72,13 +91,28 @@ def get_shipment_by_bol_id(bol_id: int) -> Optional[Dict[Any, Any]]:
     SessionClass = sessionmaker(bind=engine)
     db = SessionClass()
 
+    if not email:
+        raise SQLAlchemyError("Email is not provided. Cannot retrieve shipment info.")
+    
     try:
-        shipment = db.query(Shipment).filter(Shipment.bol_doc_id == bol_id).first()
+        shipper = db.query(Shipper).filter(Shipper.email == email).first()
+        if not shipper:
+            raise SQLAlchemyError("No shipper found with the given email.")
+            
+        shipments = (
+            db.query(Shipment)
+            .filter(
+                Shipment.bol_doc_id == bol_id,
+                Shipment.shipper_id == shipper.shipper_id
+            )
+            .first()   
+        )
 
-        if not shipment:
+        if not shipments:
             return None
 
-        return shipment.to_dict()  # Assuming your model has a to_dict method
+        return shipments.to_dict()
+
     except SQLAlchemyError as e:
         # Log the error here if you have a logging system
         raise SQLAlchemyError(
@@ -105,10 +139,14 @@ def get_all_shipments(shipper_email: str) -> Optional[Dict[Any, Any]]:
     db = SessionClass()
 
     try:
-        shipments = db.query(Shipment).filter(Shipment.shipper.email == email).all()
+        shipper = db.query(Shipper).filter(Shipper.email == shipper_email).first()
+        if not shipper:
+            raise SQLAlchemyError("No shipper found with the given email.")
+
+        shipments = db.query(Shipment).filter(Shipment.shipper_id == shipper.shipper_id).all()
         return [shipment.to_dict() for shipment in shipments]
     except SQLAlchemyError as e:
-        raise SQLAlchemyError(f"Error retrieving shipments for email {email}: {str(e)}")
+        raise SQLAlchemyError(f"Error retrieving shipments for email {shipper_email}: {str(e)}")
 
 
 def get_shipments_by_courier_contact(contact_number: str) -> list[Shipment]:

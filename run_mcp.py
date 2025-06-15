@@ -4,6 +4,8 @@ import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from gmail_integration.gmail_client import GmailClient
 from mcp_stuff.functions import get_shipments_by_courier_contact
@@ -13,10 +15,10 @@ from mcp_stuff.mcp_llm_engine import (
     get_shipment_order,
     get_shipper_email,
 )
-from reply_handler import (
+from mcp_stuff.reply_handler import (
     TEMPLATE_EMAIL_UPDATE_ETA,
-    TEMPLATE_SUPPLIER_SHIPMENT_INFO,
     TEMPLATE_TG_UPDATE_ETA,
+    get_reply_shipper
 )
 
 app = FastAPI()
@@ -52,16 +54,23 @@ if not token:
 
 
 @app.post("/query")
-async def process_query(query: str):
+async def process_query(email: str, query: str):
     try:
+        query = f"Email: {email}\nQuery: {query}"
         result = await chatbot.connect_to_server_and_run(query=query)
+
         if result:
-            result = TEMPLATE_SUPPLIER_SHIPMENT_INFO.format(**get_shipment_info(result))
-            return {"response": result}
+            processed_result = get_shipment_info(result)
+            reply = get_reply_shipper(processed_result)
+
+            return {"response": reply}
         else:
             return {
                 "response": "No shipment info found. Please specify the shipment id or BOL id."
             }
+
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
