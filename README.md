@@ -6,7 +6,19 @@ Demo page: http://plcopilot.xyz/
 
 Telegram bot: https://t.me/3pl_copilot_bot
 
-Email through which you can reach the bot: 3plcopilot@gmail.com
+Email through which you can login to the admin page
+
+```
+email: 3plcopilot@gmail.com
+password: 0cf/54Fd~$D<
+```
+
+Email on which you can get response when updating ETA through courier
+
+```
+email: shipper.3plcopilot@gmail.com
+password: ?0Po52Nj1)i-
+```
 
 ## Presentation
 
