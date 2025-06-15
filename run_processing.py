@@ -36,13 +36,18 @@ if __name__ == "__main__":
         token_file="token.json",
     )
 
+    unique_message_ids = set()
+
     while True:
 
         print("Getting unread messages...")
         emails: list[Email] = gmail_client.get_unread_messages(
             max_results=10, mark_as_read=True
         )
+        emails = [email for email in emails if email.message_id not in unique_message_ids]
         print(f"Found {len(emails)} unread messages")
+
+        unique_message_ids.update([email.message_id for email in emails])
 
         for email in emails:
             result = call_mcp_server(email=email.sender, query=email.body)
