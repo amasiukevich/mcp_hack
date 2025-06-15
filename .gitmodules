@@ -1,0 +1,4 @@
+[submodule "freight-copilot"]
+	path = freight-copilot
+	url = git@github.com:pklimuk/logiai-copilot-freight.git
+	branch = main

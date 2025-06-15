@@ -1,4 +1,5 @@
 import os
+import aiohttp
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
@@ -17,7 +18,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
     else:
-        keyboard = [[KeyboardButton("My orders")]]
+        keyboard = [[KeyboardButton("My shipments")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(
             "Welcome back! What would you like to do?",
@@ -32,7 +33,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Simple phone number validation (basic, can be improved)
         if user_msg and user_msg.replace('+', '').replace('-', '').isdigit() and 7 < len(user_msg) < 20:
             shared_contacts.add(user_id)
-            keyboard = [[KeyboardButton("My orders")]]
+            keyboard = [[KeyboardButton("My shipments")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
         else:
@@ -59,19 +60,62 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
         shared_contacts.add(contact.user_id)
-        keyboard = [[KeyboardButton("My orders")]]
+        keyboard = [[KeyboardButton("My shipments")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
 
-async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send hardcoded order data to the user."""
+async def fetch_shipments(contact_number: str, api_base_url: str):
+    """Fetch shipments from the API for the given contact number."""
+    url = f"{api_base_url}/get_courier_shipments?contact_number={contact_number}"
+    headers = {"accept": "application/json"}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                return data.get("response", [])
+            else:
+                return None
+
+async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send formatted shipment data to the user."""
     user_id = update.message.from_user.id
     if user_id not in shared_contacts:
         await update.message.reply_text("Please share your phone number first.")
         return
-    # Hardcoded order data
-    orders = "Your orders:\n1. Order #12345 - Status: Delivered\n2. Order #67890 - Status: In progress"
-    await update.message.reply_text(orders)
+
+    # TODO: Use the actual contact number from shared_contacts
+    # contact_number = shared_contacts.get(user_id)
+    contact_number = '%28974%29583-4681'
+    api_base_url = os.getenv("API_BASE_URL", "http://0.0.0.0:8000")
+    shipments_data = await fetch_shipments(contact_number, api_base_url)
+    if shipments_data is None:
+        await update.message.reply_text("Failed to retrieve shipments. Please try again later.")
+        return
+    if not shipments_data:
+        await update.message.reply_text("No shipments found for your contact number.")
+        return
+
+    def format_shipment(shipment):
+        status_map = {
+            "in_transit": "🚚 <b>In Transit</b>",
+            "delivered": "✅ <b>Delivered</b>",
+            "pending": "⏳ <b>Pending</b>"
+        }
+        status = status_map.get(shipment["shipment_status"], shipment["shipment_status"])
+        eta = shipment["eta"].replace('T', ' ') if shipment["eta"] else "N/A"
+        delivery_date = shipment["delivery_date"].replace('T', ' ') if shipment["delivery_date"] else "N/A"
+        return (
+            f"<b>📦 Shipment #{shipment['shipment_id']}</b>\n"
+            f"Status: {status}\n"
+            f"<b>ETA:</b> {eta}\n"
+            f"<b>Delivery Date:</b> {delivery_date}\n"
+            f"<b>From:</b>\n{shipment['source_address']}\n"
+            f"<b>To:</b>\n{shipment['dest_address']}\n"
+            f"<code>─────────────────────────────</code>"
+        )
+
+    message = "<b>Your Shipments:</b>\n\n" + "\n\n".join([format_shipment(s) for s in shipments_data])
+    await update.message.reply_text(message, parse_mode="HTML")
 
 def main():
     # Load environment variables from .env
@@ -86,10 +130,10 @@ def main():
 
     # Handlers for commands and messages
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("my_orders", my_orders))
+    app.add_handler(CommandHandler("my_shipments", my_shipments))
     app.add_handler(CommandHandler("phone", request_phone))
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    app.add_handler(MessageHandler(filters.Regex(r'^(My order|my order|My orders|my orders)$'), my_orders))
+    app.add_handler(MessageHandler(filters.Regex(r'^(My shipment|my shipment|My shipments|my shipments)$'), my_shipments))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     # Start polling and run until interrupted
