@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from mcp_llm_engine import MCP_ChatBot
+
+from mcp_stuff.mcp_llm_engine import MCP_ChatBot
 
 app = FastAPI()
 
@@ -17,4 +17,5 @@ async def process_query(query: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

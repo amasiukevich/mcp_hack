@@ -15,6 +15,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
+from mcp_stuff.data_schema import Shipment
+
 load_dotenv()
 
 mcp = FastMCP("TMS MCP")
