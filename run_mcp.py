@@ -1,8 +1,19 @@
 from fastapi import FastAPI, HTTPException
 
-from mcp_stuff.mcp_llm_engine import MCP_ChatBot
+from mcp_stuff.mcp_llm_engine import (
+    MCP_ChatBot, 
+    get_shipper_email, 
+    get_courier_number, 
+    get_shipment_order
+)
 from mcp_stuff.functions import get_shipments_by_courier_contact
 from gmail_integration.gmail_client import Email, GmailClient
+
+from reply_handler import (
+    TEMPLATE_EMAIL_UPDATE_ETA,
+    TEMPLATE_TG_UPDATE_ETA,
+    TEMPLATE_SUPPLIER_SHIPMENT_INFO
+)
 
 app = FastAPI()
 chatbot = MCP_ChatBot()
@@ -50,13 +61,22 @@ async def get_courier_shipments(contact_number: str):
 async def courier_shipment_updates(phone_number: str, shipment_query: str):
     try:
         result = await chatbot.connect_to_server_and_run(query=shipment_query)
-        
+
+        shipper_email = get_shipper_email(result)
+        # courier_number = get_courier_number(result)
+        shipment_order = get_shipment_order(result)
+
+        message_supplier = TEMPLATE_EMAIL_UPDATE_ETA.format(shipment_id=shipment_order)
+        message_courier = TEMPLATE_TG_UPDATE_ETA.format(shipment_id=shipment_order)
+
         gmail_client.send_email(
-            to_email="example@gmail.com",  # Replace with actual email format for phone number
+            to_email=shipper_email,
             subject="Shipment Update",
-            body=msg,
+            body=message_supplier,
         )
-        return {"response": msg}
+        print(f"Sent email to {shipper_email}")
+        
+        return {"response": message_courier}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

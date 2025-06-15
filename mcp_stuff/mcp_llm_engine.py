@@ -4,8 +4,12 @@ import logging
 import os
 from typing import List
 
+import json
+
+
 import nest_asyncio
 from anthropic import Anthropic
+
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -34,7 +38,7 @@ class MCP_ChatBot:
         self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         self.available_tools: List[dict] = []
 
-    async def process_query(self, query):
+    async def process_query(self, query) -> str:
         messages = [{"role": "user", "content": query}]
 
         response = self.anthropic.messages.create(
@@ -67,6 +71,7 @@ class MCP_ChatBot:
                     result = await self.session.call_tool(
                         tool_name, arguments=tool_args
                     )
+
                     messages.append(
                         {
                             "role": "user",
@@ -93,7 +98,7 @@ class MCP_ChatBot:
                         # logger.info(response.content[0].text)
                         process_query = False
 
-        return response.content[0].text
+        return messages
 
     async def chat_loop(self):
         """Run an interactive chat loop"""
@@ -114,7 +119,7 @@ class MCP_ChatBot:
             except Exception as e:
                 print(f"\nError: {str(e)}")
 
-    async def connect_to_server_and_run(self, query: str):
+    async def connect_to_server_and_run(self, query: str) -> list[dict]:
         # Create server parameters for stdio connection
         server_params = StdioServerParameters(
             command="python",  # Executable
@@ -145,3 +150,55 @@ class MCP_ChatBot:
                 ]
 
                 return await self.process_query(query=query)
+
+
+def get_tool_result(messages: list[dict]) -> str:
+
+    tool_result_candidates = [result for message in messages for result in message['content'] if isinstance(message['content'], list) and isinstance(result, dict)]
+    
+    tool_results = [result for result in tool_result_candidates if result['type'] == "tool_result"]
+    
+    if not tool_results:
+        return None
+    
+    tool_result = tool_results[0]['content'][0].text
+    result = json.loads(tool_result)
+    
+    return result
+
+def get_shipper_email(messages: List[dict]) -> str:
+    """
+    Get the shipper email from the messages.
+    """
+
+    tool_result = get_tool_result(messages)
+
+    if not tool_result:
+        return None
+    
+    return tool_result['shipper']['email']
+
+def get_courier_number(messages: List[dict]) -> str:
+    """
+    Get the courier number from the messages.
+    """
+    
+    tool_result = get_tool_result(messages)
+
+    if not tool_result:
+        return None
+    
+    return tool_result['courier']['contact_number']
+
+
+def get_shipment_order(messages: List[dict]) -> str:
+    """
+    Get the shipment order from the messages.
+    """
+    
+    tool_result = get_tool_result(messages)
+    
+    if not tool_result:
+        return None
+    
+    return tool_result['shipment_id']
