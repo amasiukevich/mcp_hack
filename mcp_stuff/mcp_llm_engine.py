@@ -43,6 +43,7 @@ class MCP_ChatBot:
             tools=self.available_tools,
             messages=messages,
         )
+        
         process_query = True
 
         while process_query:

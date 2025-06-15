@@ -1,6 +1,7 @@
 import json
 import time
 import requests
+import logging
 
 from gmail_integration.gmail_client import Email, GmailClient
 from llm_function_calling.llm_engine import LLMEngine
@@ -17,7 +18,7 @@ def call_mcp_server(query: str) -> str:
 
         return response.json()["response"]
     except requests.RequestException as e:
-        print(f"Error calling MCP server: {e}")
+        logging.error(f"Error calling MCP server: {e}")
         return f"Error: {str(e)}"
     
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     while True:
 
-        print("Getting unread messages...")
+        logging.info("Getting unread messages...")
         emails: list[Email] = gmail_client.get_unread_messages(
             max_results=10, mark_as_read=True
         )
@@ -46,10 +47,8 @@ if __name__ == "__main__":
             query = create_query(email)
 
             result = call_mcp_server(query=query)
-            print("Request:")
-            print(query)
-            print("Response:")
-            print(json.dumps(result, indent=4))
+            logging.info(f"Request: {query}")
+            logging.info(f"Response: {result}")
 
             gmail_client.reply_to_email(email, result)
 
