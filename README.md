@@ -4,7 +4,7 @@
 
 Demo page: http://plcopilot.xyz
 
-Telegram bot: https://t.me/3pl_copilot_bot
+Telegram bot: https://t.me/3pl_copilot_bot and phone number for Carrier: +485382535268
 
 Email through which you can login to the admin page
 
