@@ -94,9 +94,10 @@ sequenceDiagram
 1. Sign into telegram account
 2. Navigate to https://t.me/3pl_copilot_bot
 3. Click "Start"
+4. Provide phone number including '+' symbol: +485382535268
 5. Send one of the following messages
-- 'I'll be late for another 2 hours" -> It'll update ETA
-- 'What our my orders?" - It'll return shipments 
+- "I'll be late for another 2 hours for #{shipment_id}. Update ETA" -> It'll update ETA
+- "Update Shipper" - It'll return shipments 
 ## Local installation
 
 1. Clone the repository
