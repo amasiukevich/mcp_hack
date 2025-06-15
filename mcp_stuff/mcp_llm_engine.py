@@ -203,3 +203,22 @@ def get_shipment_order(messages: List[dict]) -> str:
         return None
     
     return tool_result['shipment_id']
+
+def get_shipment_info(messages: List[dict]) -> str:
+    """
+    Get the shipment info from the messages.
+    """
+    
+    tool_result = get_tool_result(messages)
+    
+    if not tool_result:
+        return None
+    
+    return {
+        "shipment_id": tool_result['shipment_id'],
+        "shipment_status": tool_result['shipment_status'],
+        "eta": tool_result['eta'],
+        "delivery_date": tool_result['delivery_date'],
+        "source_address": tool_result['source_address'],
+        "dest_address": tool_result['dest_address'],
+    }

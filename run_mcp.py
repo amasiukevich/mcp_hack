@@ -4,7 +4,8 @@ from mcp_stuff.mcp_llm_engine import (
     MCP_ChatBot, 
     get_shipper_email, 
     get_courier_number, 
-    get_shipment_order
+    get_shipment_order,
+    get_shipment_info
 )
 from mcp_stuff.functions import get_shipments_by_courier_contact
 from gmail_integration.gmail_client import Email, GmailClient
@@ -28,7 +29,11 @@ gmail_client = GmailClient(
 async def process_query(query: str):
     try:
         result = await chatbot.connect_to_server_and_run(query=query)
-        return {"response": result}
+        if result:
+            result = TEMPLATE_SUPPLIER_SHIPMENT_INFO.format(**get_shipment_info(result))
+            return {"response": result}
+        else:
+            return {"response": "No shipment info found. Please specify the shipment id or BOL id."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -75,7 +80,7 @@ async def courier_shipment_updates(phone_number: str, shipment_query: str):
             body=message_supplier,
         )
         print(f"Sent email to {shipper_email}")
-        
+
         return {"response": message_courier}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -83,4 +88,4 @@ async def courier_shipment_updates(phone_number: str, shipment_query: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
