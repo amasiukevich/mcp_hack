@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 
 from mcp_stuff.mcp_llm_engine import MCP_ChatBot
+from mcp_stuff.functions import get_shipments_by_courier_contact
 
 app = FastAPI()
-
 chatbot = MCP_ChatBot()
 
 
@@ -19,7 +19,6 @@ async def process_query(query: str):
 @app.get("/get_courier_shipments")
 async def get_courier_shipments(contact_number: str):
     try:
-        from database.couriers_updates import get_shipments_by_courier_contact
 
         result = get_shipments_by_courier_contact(contact_number)
 
@@ -44,9 +43,7 @@ async def get_courier_shipments(contact_number: str):
 @app.get("/courier_shipment_updates")
 async def courier_shipment_updates(phone_number: str, shipment_query: str):
     try:
-        # result = await chatbot.connect_to_server_and_run(query=query)
-        result = "Updated shipment eta to 2025-06-27 18:24:32.121214"
-        # TODO: Send email notification to the shipper here
+        result = await chatbot.connect_to_server_and_run(query=shipment_query)
         return {"response": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
