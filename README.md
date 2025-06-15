@@ -2,7 +2,7 @@
 
 ## Essentials
 
-Demo page: http://plcopilot.xyz/
+Demo page: http://plcopilot.xyz
 
 Telegram bot: https://t.me/3pl_copilot_bot
 
