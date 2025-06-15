@@ -32,7 +32,7 @@ def create_query(email: Email) -> str:
 
 if __name__ == "__main__":
     gmail_client = GmailClient(
-        credentials_file="gmail_integration/credentials.json",
+        credentials_file="credentials.json",
         token_file="token.json",
     )
 
