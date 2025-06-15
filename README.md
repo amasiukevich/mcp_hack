@@ -24,8 +24,27 @@ What was developed:
 3. Telegram bot which can recieve messages from couriers and ask MCP server to update the data in the TMS.
 4. Gmail client which can recieves emails from the users and answer their questions about the shipments.
 
+## Use cases
 
-## Locall installation
+1. Shipper asks broker for shipment update
+
+```mermaid
+sequenceDiagram
+    participant Shipper as Shipper (Email)
+    participant Broker as Broker (Email)
+    participant Integration as Integration Layer
+    participant MCP_AI as MCP AI Copilot
+    participant TMS as TMS Web App
+
+    Shipper->>Broker: Email load request
+    Integration->>Broker: Listen for new messages
+    Integration->>MCP_AI: Parse email content
+    MCP_AI->>TMS: Look up relevant TMS data
+    MCP_AI->>Broker: Generate response
+    Broker->>Shipper: Auto-respond on behalf of broker
+```
+
+## Local installation
 
 1. Clone the repository
 
