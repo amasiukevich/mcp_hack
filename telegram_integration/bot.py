@@ -6,6 +6,34 @@ from dotenv import load_dotenv
 # In-memory set to track users who have shared contact info
 shared_contacts = set()
 
+# Hardcoded shipment data for demonstration
+shipments_data = [
+    {
+        "shipment_id": 7,
+        "shipment_status": "in_transit",
+        "eta": "2025-06-27T18:24:32.121214",
+        "delivery_date": None,
+        "dest_address": "1175 Reyes Crossing, East Olivia, KY 43005",
+        "source_address": "8107 Rebecca Dale Apt. 074, Roytown, MA 76155"
+    },
+    {
+        "shipment_id": 15,
+        "shipment_status": "delivered",
+        "eta": "2025-06-24T04:57:46.303766",
+        "delivery_date": "2025-06-30T01:46:11.789912",
+        "dest_address": "981 Keith Manors Apt. 090, Riosland, TN 70984",
+        "source_address": "4193 Stephanie Terrace Apt. 816, East Matthew, ID 31132"
+    },
+    {
+        "shipment_id": 35,
+        "shipment_status": "pending",
+        "eta": "2025-07-07T16:32:40.535072",
+        "delivery_date": "2025-07-09T16:09:33.931047",
+        "dest_address": "7884 Amber Roads Apt. 696, Aprilborough, VI 95700",
+        "source_address": "3224 Anthony Dale Suite 238, West Georgefort, WA 19629"
+    }
+]
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a greeting message and ask for contact info if not already shared."""
     user_id = update.message.from_user.id
@@ -64,14 +92,33 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Thanks! What would you like to do?", reply_markup=reply_markup)
 
 async def my_shipments(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send hardcoded shipment data to the user."""
+    """Send formatted shipment data to the user."""
     user_id = update.message.from_user.id
     if user_id not in shared_contacts:
         await update.message.reply_text("Please share your phone number first.")
         return
-    # Hardcoded shipment data
-    shipments = "Your shipments:\n1. Shipment #12345 - Status: Delivered\n2. Shipment #67890 - Status: In progress"
-    await update.message.reply_text(shipments)
+
+    def format_shipment(shipment):
+        status_map = {
+            "in_transit": "🚚 <b>In Transit</b>",
+            "delivered": "✅ <b>Delivered</b>",
+            "pending": "⏳ <b>Pending</b>"
+        }
+        status = status_map.get(shipment["shipment_status"], shipment["shipment_status"])
+        eta = shipment["eta"].replace('T', ' ') if shipment["eta"] else "N/A"
+        delivery_date = shipment["delivery_date"].replace('T', ' ') if shipment["delivery_date"] else "N/A"
+        return (
+            f"<b>📦 Shipment #{shipment['shipment_id']}</b>\n"
+            f"Status: {status}\n"
+            f"<b>ETA:</b> {eta}\n"
+            f"<b>Delivery Date:</b> {delivery_date}\n"
+            f"<b>From:</b>\n{shipment['source_address']}\n"
+            f"<b>To:</b>\n{shipment['dest_address']}\n"
+            f"<code>─────────────────────────────</code>"
+        )
+
+    message = "<b>Your Shipments:</b>\n\n" + "\n\n".join([format_shipment(s) for s in shipments_data])
+    await update.message.reply_text(message, parse_mode="HTML")
 
 def main():
     # Load environment variables from .env
