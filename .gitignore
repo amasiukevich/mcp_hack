@@ -197,3 +197,5 @@ token.json
 
 # /database/test_shipments.db
 # *.db
+
+.DS_Store
