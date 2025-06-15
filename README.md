@@ -38,7 +38,7 @@ What was developed:
 
 ## Use cases
 
-1. Shipper asks broker about shipment status
+### Shipper asks broker about shipment status
 
 ```mermaid
 sequenceDiagram
@@ -55,7 +55,25 @@ sequenceDiagram
     MCP_AI->>Broker: Generate response
     Broker->>Shipper: Auto-respond on behalf of broker
 ```
-2. Carrier updates the shipment status 
+**How to test step-by-step**
+1. Sign into gmail account
+```
+Broker
+email: 3plcopilot@gmail.com
+password: 0cf/54Fd~$D<
+```
+2. Navigate to http://plcopilot.xyz
+3. Sign in with **Broker** email
+4. Click "Connect" TMS and Telegram
+5. Sign into gmail account
+```
+Shipper
+email: shipper.3plcopilot@gmail.com
+password: ?0Po52Nj1)i-
+```
+6. Send message from shipper.3plcopilot@gmail.com to 3plcopilot@gmail.com with question like "Where's my shipment?"
+
+### Carrier updates the shipment status 
 
 ```mermaid
 sequenceDiagram
@@ -72,7 +90,13 @@ sequenceDiagram
     MCP_AI->>Broker: Generate response
     Broker->>Carrier: Auto-respond on behalf of broker
 ```
-
+**How to test step-by-step**
+1. Sign into telegram account
+2. Navigate to https://t.me/3pl_copilot_bot
+3. Click "Start"
+5. Send one of the following messages
+- 'I'll be late for another 2 hours" -> It'll update ETA
+- 'What our my orders?" - It'll return shipments 
 ## Local installation
 
 1. Clone the repository
