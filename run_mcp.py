@@ -32,8 +32,8 @@ app.add_middleware(
 chatbot = MCP_ChatBot()
 
 gmail_client = GmailClient(
-    credentials_file="gmail_integration/credentials.json",
-    token_file="gmail_integration/token.json",
+    credentials_file="credentials.json",
+    token_file="token.json",
 )
 
 # Load environment variables
