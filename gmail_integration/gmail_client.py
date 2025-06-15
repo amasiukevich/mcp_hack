@@ -65,6 +65,10 @@ class GmailClient:
                 )
                 creds = flow.run_local_server(port=0)
 
+        if not os.path.exists(self.token_file) and creds:
+            with open(self.token_file, "w") as token:
+                token.write(creds.to_json())
+
         return build("gmail", "v1", credentials=creds)
 
     def _parse_email_message(self, message: dict) -> Email:

@@ -198,3 +198,5 @@ gmail_integration/token_credentials.json
 
 # /database/test_shipments.db
 # *.db
+
+.DS_Store
