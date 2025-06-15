@@ -1,4 +1,5 @@
 import os
+import sys
 import urllib.parse
 
 import aiohttp
@@ -11,6 +12,15 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+
+
+load_dotenv()
+
+# Handle SSL certificates for macOS
+if sys.platform == "darwin" and os.environ.get("ADD_ADHOC_CERT") == "true":
+    os.environ["REQUESTS_CA_BUNDLE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+    os.environ["SSL_CERT_FILE"] = "/opt/homebrew/etc/openssl@3/cert.pem"
+
 
 # In-memory set to track users who have shared contact info
 shared_contacts = dict()

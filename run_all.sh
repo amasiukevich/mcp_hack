@@ -57,7 +57,7 @@ FRONTEND_PID=$!
 
 # Run Telegram bot
 echo "Starting Telegram bot..."
-python3 telegram_integration/bot.py > logs/bot.log 2>&1 &
+python telegram_integration/bot.py > logs/bot.log 2>&1 &
 BOT_PID=$!
 
 echo "All services are running!"
