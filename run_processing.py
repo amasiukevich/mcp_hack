@@ -5,9 +5,10 @@ import requests
 
 from gmail_integration.gmail_client import Email, GmailClient
 
+mcp_api_url = "http://0.0.0.0:8000"
 
 def call_mcp_server(query: str) -> str:
-    url = "http://0.0.0.0:8001/query"
+    url = mcp_api_url + "/query"
     params = {"query": query}
     headers = {"accept": "application/json"}
 

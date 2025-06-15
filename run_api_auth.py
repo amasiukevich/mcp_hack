@@ -123,7 +123,7 @@ async def oauth2callback(request: Request):
         print(f"Credentials saved to {TOKEN_FILE}")
 
         # Redirect back to frontend after successful authentication
-        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:8080/dashboard")
         print(f"Redirecting to frontend: {frontend_url}")
         return RedirectResponse(url=frontend_url)
     except Exception as e:
@@ -140,4 +140,4 @@ async def check_auth_status():
 
 
 if __name__ == "__main__":
-    uvicorn.run("run_api_auth:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("run_api_auth:app", host="0.0.0.0", port=8099, reload=True)
