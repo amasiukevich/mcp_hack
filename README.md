@@ -6,7 +6,7 @@ Demo page: http://plcopilot.xyz/
 
 Telegram bot: https://t.me/3pl_copilot_bot
 
-Email threw which you can reach the bot: 3plcopilot@gmail.com
+Email through which you can reach the bot: 3plcopilot@gmail.com
 
 ## Presentation
 
