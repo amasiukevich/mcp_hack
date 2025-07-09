@@ -18,14 +18,14 @@ Email through which you can login to the admin page
 
 ```
 email: 3plcopilot@gmail.com
-password: 0cf/54Fd~$D<
+password: <reach-out-for-password>
 ```
 
 Email on which you can get response when updating ETA through courier
 
 ```
 email: shipper.3plcopilot@gmail.com
-password: ?0Po52Nj1)i-
+password: <reach-out-for-password>
 ```
 
 ## Presentation
