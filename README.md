@@ -68,7 +68,7 @@ sequenceDiagram
 ```
 Broker
 email: 3plcopilot@gmail.com
-password: 0cf/54Fd~$D<
+password: <reach-out-for-password>
 ```
 2. Navigate to http://plcopilot.xyz
 3. Sign in with **Broker** email
@@ -77,7 +77,7 @@ password: 0cf/54Fd~$D<
 ```
 Shipper
 email: shipper.3plcopilot@gmail.com
-password: ?0Po52Nj1)i-
+password: <reach-out-for-password>
 ```
 6. Send message from shipper.3plcopilot@gmail.com to 3plcopilot@gmail.com with question like "Where's my shipment?"
 
